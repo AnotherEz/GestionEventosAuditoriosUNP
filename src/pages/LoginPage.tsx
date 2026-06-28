@@ -1,5 +1,7 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
+import { signIn } from '../lib/auth'
 import {
   Eye, EyeOff, UserCircle, Monitor, GraduationCap, BookOpen,
   Users, Globe, FileText, Award, Search, Building2, BookMarked, Heart,
@@ -254,6 +256,7 @@ function ServicesGrid({ mobile = false }: { mobile?: boolean }) {
 
 /* ─── Main ───────────────────────────────────────────────────────────────────── */
 export default function LoginPage() {
+  const navigate     = useNavigate()
   const [usuario,    setUsuario]    = useState('')
   const [contrasena, setContrasena] = useState('')
   const [loading,    setLoading]    = useState(false)
@@ -263,8 +266,14 @@ export default function LoginPage() {
     e.preventDefault()
     if (!usuario || !contrasena) { setError('Ingrese su usuario y contraseña.'); return }
     setError(''); setLoading(true)
-    await new Promise(r => setTimeout(r, 1200))
-    setLoading(false); setError('Usuario o contraseña incorrectos.')
+    try {
+      await signIn(usuario, contrasena)
+      navigate('/dashboard')
+    } catch {
+      setError('Usuario o contraseña incorrectos.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (

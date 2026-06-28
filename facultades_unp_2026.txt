@@ -1,0 +1,83 @@
+# Facultades y Escuelas Profesionales - Universidad Nacional de Piura (UNP) - 2026
+
+## Facultad de Agronomía
+
+-   Agronomía
+-   Ingeniería Agrícola
+
+## Facultad de Arquitectura y Urbanismo
+
+-   Arquitectura y Urbanismo
+
+## Facultad de Ciencias Administrativas
+
+-   Administración
+
+## Facultad de Ciencias Contables y Financieras
+
+-   Ciencias Contables y Financieras
+
+## Facultad de Ciencias
+
+-   Matemática
+-   Física
+-   Ciencias Biológicas
+-   Ingeniería Electrónica y Telecomunicaciones
+-   Estadística
+
+## Facultad de Ciencias de la Salud
+
+-   Medicina Humana
+-   Enfermería
+-   Estomatología
+-   Obstetricia
+-   Psicología
+
+## Facultad de Ciencias Sociales y Educación
+
+-   Historia y Geografía
+-   Lengua y Literatura
+-   Educación Inicial
+-   Educación Primaria
+-   Ciencias de la Comunicación
+
+## Facultad de Derecho y Ciencias Políticas
+
+-   Derecho y Ciencias Políticas
+
+## Facultad de Economía
+
+-   Economía
+
+## Facultad de Ingeniería Civil
+
+-   Ingeniería Civil
+
+## Facultad de Ingeniería Industrial
+
+-   Ingeniería Industrial
+-   Ingeniería Informática
+-   Ingeniería Agroindustrial e Industrias Alimentarias
+-   Ingeniería Mecatrónica
+
+## Facultad de Ingeniería de Minas
+
+-   Ingeniería de Minas
+-   Ingeniería Geológica
+-   Ingeniería de Petróleo
+-   Ingeniería Química
+-   Ingeniería Ambiental y Seguridad Industrial
+
+## Facultad de Ingeniería Pesquera
+
+-   Ingeniería Pesquera
+
+## Facultad de Zootecnia
+
+-   Ingeniería Zootecnia
+-   Medicina Veterinaria
+
+## Resumen
+
+-   Facultades: 14
+-   Escuelas Profesionales: 35
