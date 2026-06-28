@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { signIn } from '../lib/auth'
+import { signIn, signUpAlumno, signUpDocente, detectarRolPorEmail } from '../lib/auth'
+import { supabase } from '../lib/supabase'
 import {
   Eye, EyeOff, UserCircle, Monitor, GraduationCap, BookOpen,
   Users, Globe, FileText, Award, Search, Building2, BookMarked, Heart,
@@ -58,87 +59,87 @@ type Tab = keyof typeof SERVICES
 const TABS = Object.keys(SERVICES) as Tab[]
 
 /* ─── FloatingInput ──────────────────────────────────────────────────────────── */
-function FloatingInput({
-  id, label, value, onChange, isPassword = false, mobile = false,
-}: {
-  id: string; label: string; value: string
-  onChange: (v: string) => void; isPassword?: boolean; mobile?: boolean
+function FloatingInput({ id, label, value, onChange, isPassword = false, mobile = false, type = 'text' }: {
+  id: string; label: string; value: string; onChange: (v: string) => void
+  isPassword?: boolean; mobile?: boolean; type?: string
 }) {
   const [focused,  setFocused]  = useState(false)
   const [showPwd,  setShowPwd]  = useState(false)
   const lifted = focused || value.length > 0
-
-  const borderColor = mobile
-    ? (focused ? '#1565c0' : '#bbdefb')
-    : (focused ? '#1565c0' : '#aaaaaa')
-
-  const bg = mobile
-    ? (focused ? '#e3f2fd' : '#f0f8ff')
-    : (focused ? '#e8f0fe' : '#ffffff')
+  const inputType = isPassword ? (showPwd ? 'text' : 'password') : type
 
   return (
     <div style={{ position: 'relative', width: '100%', height: 56 }}>
-      {/* Border box */}
       <div style={{
-        position: 'absolute', inset: 0,
-        borderRadius: mobile ? 14 : 8,
-        border: `${focused ? 2 : 1}px solid ${borderColor}`,
-        background: bg,
-        transition: 'border-color 150ms, background 150ms',
-        pointerEvents: 'none',
+        position: 'absolute', inset: 0, borderRadius: mobile ? 14 : 8,
+        border: `${focused ? 2 : 1}px solid ${focused ? '#1565c0' : (mobile ? '#bbdefb' : '#aaaaaa')}`,
+        background: focused ? '#e8f0fe' : (mobile ? '#f0f8ff' : '#ffffff'),
+        transition: 'border-color 150ms, background 150ms', pointerEvents: 'none',
       }} />
-
-      {/* Floating label */}
       <label htmlFor={id} style={{
-        position: 'absolute',
-        left: 16,
-        pointerEvents: 'none',
-        userSelect: 'none',
-        transformOrigin: 'left top',
-        transition: 'transform 150ms ease, color 150ms ease',
+        position: 'absolute', left: 16, pointerEvents: 'none', userSelect: 'none',
+        transformOrigin: 'left top', transition: 'transform 150ms ease, color 150ms ease',
         transform: lifted ? 'translateY(8px) scale(0.72)' : 'translateY(18px) scale(1)',
-        fontSize: 15,
-        lineHeight: 1,
-        color: focused ? '#1565c0' : '#1565c0',
-        fontWeight: lifted ? 500 : 400,
-      }}>
-        {label}
-      </label>
-
-      {/* Input */}
-      <input
-        id={id}
-        type={isPassword && !showPwd ? 'password' : 'text'}
-        value={value}
+        fontSize: 15, lineHeight: 1,
+        color: focused ? '#1565c0' : '#1565c0', fontWeight: lifted ? 500 : 400,
+      }}>{label}</label>
+      <input id={id} type={inputType} value={value}
         onChange={e => onChange(e.target.value)}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-        autoComplete={isPassword ? 'current-password' : 'username'}
+        onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
         style={{
-          position: 'absolute', inset: 0,
-          width: '100%', height: '100%',
+          position: 'absolute', inset: 0, width: '100%', height: '100%',
           background: 'transparent', border: 'none', outline: 'none',
-          borderRadius: mobile ? 14 : 8,
-          fontSize: 15, color: '#111827',
-          paddingLeft: 16,
-          paddingRight: isPassword ? 44 : 16,
-          paddingTop: 22,
-          paddingBottom: 4,
-          boxSizing: 'border-box',
-          fontFamily: 'inherit',
-        }}
-      />
-
-      {/* Eye toggle */}
+          borderRadius: mobile ? 14 : 8, fontSize: 15, color: '#111827',
+          paddingLeft: 16, paddingRight: isPassword ? 44 : 16,
+          paddingTop: 22, paddingBottom: 4, boxSizing: 'border-box', fontFamily: 'inherit',
+        }} />
       {isPassword && (
         <button type="button" tabIndex={-1} onClick={() => setShowPwd(p => !p)} style={{
           position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
-          background: 'none', border: 'none', padding: 4,
-          cursor: 'pointer', color: '#1565c0', display: 'flex', alignItems: 'center',
+          background: 'none', border: 'none', padding: 4, cursor: 'pointer',
+          color: '#1565c0', display: 'flex', alignItems: 'center',
         }}>
           {showPwd ? <EyeOff size={18} /> : <Eye size={18} />}
         </button>
       )}
+    </div>
+  )
+}
+
+/* ─── Select Field ───────────────────────────────────────────────────────────── */
+function SelectField({ id, label, value, onChange, options, mobile = false }: {
+  id: string; label: string; value: string; onChange: (v: string) => void
+  options: { value: string; label: string }[]; mobile?: boolean
+}) {
+  const [focused, setFocused] = useState(false)
+  const active = value !== ''
+  return (
+    <div style={{ position: 'relative', width: '100%', height: 56 }}>
+      <div style={{
+        position: 'absolute', inset: 0, borderRadius: mobile ? 14 : 8,
+        border: `${focused ? 2 : 1}px solid ${focused ? '#1565c0' : (mobile ? '#bbdefb' : '#aaaaaa')}`,
+        background: focused ? '#e8f0fe' : (mobile ? '#f0f8ff' : '#ffffff'),
+        transition: 'border-color 150ms, background 150ms', pointerEvents: 'none',
+      }} />
+      <label htmlFor={id} style={{
+        position: 'absolute', left: 16, pointerEvents: 'none', userSelect: 'none',
+        transformOrigin: 'left top', transition: 'transform 150ms ease',
+        transform: active ? 'translateY(8px) scale(0.72)' : 'translateY(18px) scale(1)',
+        fontSize: 15, lineHeight: 1, color: focused ? '#1565c0' : '#1565c0', fontWeight: active ? 500 : 400,
+      }}>{label}</label>
+      <select id={id} value={value} onChange={e => onChange(e.target.value)}
+        onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
+        style={{
+          position: 'absolute', inset: 0, width: '100%', height: '100%',
+          background: 'transparent', border: 'none', outline: 'none',
+          borderRadius: mobile ? 14 : 8, fontSize: 15, color: '#111827',
+          paddingLeft: 16, paddingRight: 16, paddingTop: 22, paddingBottom: 4,
+          boxSizing: 'border-box', fontFamily: 'inherit', cursor: 'pointer',
+          appearance: 'none',
+        }}>
+        <option value="" disabled />
+        {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </select>
     </div>
   )
 }
@@ -155,97 +156,43 @@ function Shield({ size = 112 }: { size?: number }) {
       <text x="60" y="75" textAnchor="middle" fill="white" fontSize="12" fontWeight="bold" fontFamily="serif">UNP</text>
     </svg>
   )
-  return (
-    <img src={unpShield} alt="Escudo UNP" onError={() => setFailed(true)}
-      style={{ width: size, height: size, objectFit: 'contain', display: 'block', margin: '0 auto' }} />
-  )
+  return <img src={unpShield} alt="Escudo UNP" onError={() => setFailed(true)}
+    style={{ width: size, height: size, objectFit: 'contain', display: 'block', margin: '0 auto' }} />
 }
 
 /* ─── Services Grid ──────────────────────────────────────────────────────────── */
 function ServicesGrid({ mobile = false }: { mobile?: boolean }) {
   const [activeTab, setActiveTab] = useState<Tab>('Pregrado')
-  const services = SERVICES[activeTab]
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
-      {/* Tabs */}
       <div style={{
         display: 'flex', flexWrap: mobile ? 'wrap' : 'nowrap', gap: mobile ? '0 24px' : 28,
         borderBottom: `1px solid ${mobile ? '#e0e0e0' : 'rgba(255,255,255,0.25)'}`,
-        marginBottom: mobile ? 16 : 20,
-        flexShrink: 0,
-        padding: mobile ? '0 4px' : undefined,
+        marginBottom: mobile ? 16 : 20, flexShrink: 0, padding: mobile ? '0 4px' : undefined,
       }}>
         {TABS.map(tab => (
           <button key={tab} onClick={() => setActiveTab(tab)} style={{
-            paddingBottom: 10,
-            paddingTop: mobile ? 4 : 0,
-            fontSize: mobile ? 15 : 13,
-            fontWeight: activeTab === tab ? 700 : 400,
+            paddingBottom: 10, paddingTop: mobile ? 4 : 0,
+            fontSize: mobile ? 15 : 13, fontWeight: activeTab === tab ? 700 : 400,
             background: 'none', border: 'none', cursor: 'pointer',
-            color: mobile
-              ? (activeTab === tab ? '#1565c0' : '#9e9e9e')
-              : (activeTab === tab ? '#fff' : 'rgba(144,202,249,0.9)'),
-            position: 'relative', whiteSpace: 'nowrap',
-            fontFamily: 'inherit', transition: 'color 150ms',
+            color: mobile ? (activeTab === tab ? '#1565c0' : '#9e9e9e') : (activeTab === tab ? '#fff' : 'rgba(144,202,249,0.9)'),
+            position: 'relative', whiteSpace: 'nowrap', fontFamily: 'inherit', transition: 'color 150ms',
           }}>
             {tab}
-            {activeTab === tab && (
-              <motion.div layoutId={mobile ? 'tab-m' : 'tab-d'} style={{
-                position: 'absolute', bottom: 0, left: 0, right: 0,
-                height: 2,
-                background: mobile ? '#1565c0' : '#fff',
-                borderRadius: 2,
-              }} />
-            )}
+            {activeTab === tab && <motion.div layoutId={mobile ? 'tab-m' : 'tab-d'} style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 2, background: mobile ? '#1565c0' : '#fff', borderRadius: 2 }} />}
           </button>
         ))}
       </div>
-
-      {/* Cards */}
-      <motion.div
-        key={activeTab}
-        initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}
-        style={{
-          display: 'grid',
-          gridTemplateColumns: mobile ? 'repeat(2, 1fr)' : 'repeat(auto-fill, minmax(130px, 1fr))',
-          gap: mobile ? 12 : 10,
-          overflowY: 'auto',
-          flex: 1,
-          paddingRight: 4,
-          paddingBottom: 8,
-        }}
-      >
-        {services.map((svc, i) => {
+      <motion.div key={activeTab} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}
+        style={{ display: 'grid', gridTemplateColumns: mobile ? 'repeat(2,1fr)' : 'repeat(auto-fill,minmax(130px,1fr))', gap: mobile ? 12 : 10, overflowY: 'auto', flex: 1, paddingRight: 4, paddingBottom: 8 }}>
+        {SERVICES[activeTab].map((svc, i) => {
           const Icon = svc.icon
           return (
-            <motion.div
-              key={svc.label}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.03 }}
+            <motion.div key={svc.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
               whileHover={!mobile ? { scale: 1.03 } : {}}
-              style={{
-                background: mobile ? '#fff' : 'rgba(255,255,255,0.92)',
-                borderRadius: mobile ? 16 : 12,
-                border: mobile ? '1.5px solid #90caf9' : 'none',
-                display: 'flex', flexDirection: 'column',
-                alignItems: 'center', justifyContent: 'center',
-                gap: mobile ? 14 : 8,
-                padding: mobile ? '24px 12px' : '18px 12px',
-                cursor: 'pointer',
-                minHeight: mobile ? 130 : 100,
-                transition: 'background 150ms',
-              }}
-            >
+              style={{ background: mobile ? '#fff' : 'rgba(255,255,255,0.92)', borderRadius: mobile ? 16 : 12, border: mobile ? '1.5px solid #90caf9' : 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: mobile ? 14 : 8, padding: mobile ? '24px 12px' : '18px 12px', cursor: 'pointer', minHeight: mobile ? 130 : 100 }}>
               <Icon size={mobile ? 36 : 28} color="#1565c0" strokeWidth={1.5} />
-              <span style={{
-                color: mobile ? '#1565c0' : '#1a237e',
-                fontSize: mobile ? 13 : 11,
-                textAlign: 'center', lineHeight: 1.35, fontWeight: 500,
-              }}>
-                {svc.label}
-              </span>
+              <span style={{ color: mobile ? '#1565c0' : '#1a237e', fontSize: mobile ? 13 : 11, textAlign: 'center', lineHeight: 1.35, fontWeight: 500 }}>{svc.label}</span>
             </motion.div>
           )
         })}
@@ -254,183 +201,293 @@ function ServicesGrid({ mobile = false }: { mobile?: boolean }) {
   )
 }
 
-/* ─── Main ───────────────────────────────────────────────────────────────────── */
-export default function LoginPage() {
-  const navigate     = useNavigate()
-  const [usuario,    setUsuario]    = useState('')
+/* ─── Register Form ──────────────────────────────────────────────────────────── */
+function RegisterForm({ mobile, onBack }: { mobile: boolean; onBack: () => void }) {
+  const [email,    setEmail]    = useState('')
+  const [nombres,  setNombres]  = useState('')
+  const [apellidos,setApellidos]= useState('')
+  const [password, setPassword] = useState('')
+  const [campo1,   setCampo1]   = useState('')   // código (alumno) | DNI (docente)
+  const [campo2,   setCampo2]   = useState('')   // carrera_id (alumno) | facultad_id (docente)
+  const [loading,  setLoading]  = useState(false)
+  const [error,    setError]    = useState('')
+  const [success,  setSuccess]  = useState(false)
+  const [carreras, setCarreras] = useState<{value:string;label:string}[]>([])
+  const [facultades,setFacultades]=useState<{value:string;label:string}[]>([])
+
+  const rol = detectarRolPorEmail(email)
+  const esAlumno  = rol === 'alumno'
+  const esDocente = rol === 'docente'
+
+  useEffect(() => {
+    supabase.from('carreras').select('id,nombre').then(({ data }) => {
+      if (data) setCarreras(data.map(c => ({ value: c.id, label: c.nombre })))
+    })
+    supabase.from('facultades').select('id,nombre').then(({ data }) => {
+      if (data) setFacultades(data.map(f => ({ value: f.id, label: f.nombre })))
+    })
+  }, [])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    if (!rol) { setError('Correo no válido. Usa @alumnos.unp.edu.pe o @unp.edu.pe'); return }
+    if (email === 'admin@unp.edu.pe') { setError('No puedes registrarte con ese correo.'); return }
+    if (!nombres || !apellidos || !password || !campo1 || !campo2) { setError('Completa todos los campos.'); return }
+    setLoading(true)
+    try {
+      if (esAlumno) {
+        await signUpAlumno({ email, password, nombres, apellidos, codigo_universitario: campo1, carrera_id: campo2 })
+      } else {
+        await signUpDocente({ email, password, nombres, apellidos, dni: campo1, facultad_id: campo2 })
+      }
+      setSuccess(true)
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Error al registrarse.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (success) return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, padding: '16px 0', textAlign: 'center' }}>
+      <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#e8f5e9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <span style={{ fontSize: 28 }}>✓</span>
+      </div>
+      <p style={{ color: mobile ? '#fff' : '#1a237e', fontWeight: 700, fontSize: 16, margin: 0 }}>¡Registro exitoso!</p>
+      <p style={{ color: mobile ? 'rgba(255,255,255,0.8)' : '#555', fontSize: 13, margin: 0 }}>
+        Revisa tu correo institucional para confirmar tu cuenta.
+      </p>
+      <button onClick={onBack} style={{ background: '#1565c0', color: '#fff', border: 'none', borderRadius: mobile ? 14 : 8, padding: '12px 32px', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+        Ir al inicio de sesión
+      </button>
+    </div>
+  )
+
+  return (
+    <form onSubmit={handleSubmit} style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <FloatingInput id={`${mobile?'m':'d'}-reg-email`}    label="Correo institucional" value={email}     onChange={setEmail}     mobile={mobile} type="email" />
+
+      <AnimatePresence>
+      {(esAlumno || esDocente) && (
+        <motion.div initial={{ opacity:0, height:0 }} animate={{ opacity:1, height:'auto' }} exit={{ opacity:0, height:0 }}
+          style={{ display:'flex', flexDirection:'column', gap:12, overflow:'hidden' }}>
+          <div style={{ display:'flex', gap:12 }}>
+            <FloatingInput id={`${mobile?'m':'d'}-reg-nom`}  label="Nombres"   value={nombres}   onChange={setNombres}   mobile={mobile} />
+            <FloatingInput id={`${mobile?'m':'d'}-reg-ape`}  label="Apellidos" value={apellidos} onChange={setApellidos} mobile={mobile} />
+          </div>
+          {esAlumno
+            ? <FloatingInput id={`${mobile?'m':'d'}-reg-cod`} label="Código universitario" value={campo1} onChange={setCampo1} mobile={mobile} />
+            : <FloatingInput id={`${mobile?'m':'d'}-reg-dni`} label="DNI" value={campo1} onChange={setCampo1} mobile={mobile} type="number" />
+          }
+          {esAlumno
+            ? <SelectField id={`${mobile?'m':'d'}-reg-car`} label="Carrera"  value={campo2} onChange={setCampo2} options={carreras}   mobile={mobile} />
+            : <SelectField id={`${mobile?'m':'d'}-reg-fac`} label="Facultad" value={campo2} onChange={setCampo2} options={facultades} mobile={mobile} />
+          }
+          <FloatingInput id={`${mobile?'m':'d'}-reg-pwd`} label="Contraseña" value={password} onChange={setPassword} isPassword mobile={mobile} />
+          <p style={{ fontSize: 11, color: mobile ? 'rgba(255,255,255,0.6)' : '#9e9e9e', margin: '-4px 0 0', textAlign: 'center' }}>
+            {esAlumno ? 'Registrándote como Alumno' : 'Registrándote como Docente'}
+          </p>
+        </motion.div>
+      )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {error && <motion.p initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
+          style={{ color: mobile ? '#ffcdd2' : '#d32f2f', fontSize: 12, textAlign: 'center', margin: 0 }}>{error}</motion.p>}
+      </AnimatePresence>
+
+      <button type="submit" disabled={loading || (!esAlumno && !esDocente)} style={{
+        width: '100%', padding: '13px 0', background: '#1565c0', color: '#fff',
+        border: 'none', borderRadius: mobile ? 14 : 8, fontSize: 15, fontWeight: 600,
+        cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'inherit',
+        opacity: loading || (!esAlumno && !esDocente) ? 0.65 : 1,
+      }}>
+        {loading ? 'Registrando...' : 'Crear cuenta'}
+      </button>
+      <button type="button" onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', color: mobile ? 'rgba(255,255,255,0.8)' : '#1565c0', fontSize: 13 }}>
+        ← Volver al inicio de sesión
+      </button>
+    </form>
+  )
+}
+
+/* ─── Login Form ─────────────────────────────────────────────────────────────── */
+function LoginForm({ mobile, onRegister }: { mobile: boolean; onRegister: () => void }) {
+  const navigate = useNavigate()
+  const [email,      setEmail]      = useState('')
   const [contrasena, setContrasena] = useState('')
   const [loading,    setLoading]    = useState(false)
   const [error,      setError]      = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!usuario || !contrasena) { setError('Ingrese su usuario y contraseña.'); return }
+    if (!email || !contrasena) { setError('Ingrese su usuario y contraseña.'); return }
     setError(''); setLoading(true)
     try {
-      await signIn(usuario, contrasena)
+      await signIn(email, contrasena)
       navigate('/dashboard')
     } catch {
-      setError('Usuario o contraseña incorrectos.')
+      setError('Correo o contraseña incorrectos.')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <>
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* ── MOBILE: stacked full-screen ── */
-        .login-root { display: flex; height: 100vh; width: 100vw; overflow: hidden; font-family: 'Segoe UI', system-ui, sans-serif; }
-        .left-panel  { width: 320px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #fff; padding: 32px 36px; box-shadow: 2px 0 12px rgba(0,0,0,0.08); z-index: 10; overflow-y: auto; }
-        .right-panel { flex: 1; position: relative; display: flex; flex-direction: column; overflow: hidden; }
-        .mobile-login { display: none; }
-        .mobile-services { display: none; }
-
-        @media (max-width: 767px) {
-          .login-root    { flex-direction: column; height: auto; min-height: 100vh; overflow-y: auto; }
-          .left-panel    { display: none; }
-          .right-panel   { display: none; }
-          .mobile-login  { display: flex; flex-direction: column; align-items: center; min-height: 100vh; position: relative; }
-          .mobile-services { display: flex; flex-direction: column; background: #fff; padding: 20px 16px 32px; min-height: 100vh; }
-        }
-      `}</style>
-
-      <div className="login-root">
-
-        {/* ── DESKTOP LEFT ── */}
-        <div className="left-panel">
-          <Shield size={112} />
-          <h1 style={{ marginTop: 16, textAlign: 'center', color: '#1a237e', fontWeight: 700, fontSize: 18, lineHeight: 1.4, letterSpacing: '0.02em' }}>
-            UNIVERSIDAD<br />NACIONAL<br />DE PIURA
-          </h1>
-          <p style={{ marginTop: 4, marginBottom: 24, color: '#9e9e9e', fontSize: 15 }}>Bienvenido</p>
-          <LoginForm usuario={usuario} setUsuario={setUsuario} contrasena={contrasena} setContrasena={setContrasena} loading={loading} error={error} onSubmit={handleSubmit} mobile={false} />
-          <div style={{ marginTop: 32, width: 40, height: 4, background: '#e0e0e0', borderRadius: 2 }} />
-        </div>
-
-        {/* ── DESKTOP RIGHT ── */}
-        <div className="right-panel">
-          <div style={{ position: 'absolute', inset: 0 }}>
-            <img src={campusBg} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            <div style={{ position: 'absolute', inset: 0, background: 'rgba(13,71,161,0.78)' }} />
-          </div>
-          <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', height: '100%', padding: '20px 24px 16px' }}>
-            <ServicesGrid mobile={false} />
-            <div style={{ paddingTop: 12, flexShrink: 0 }}>
-              <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 36, fontWeight: 700, lineHeight: 1 }}>Bienvenido a</p>
-            </div>
-          </div>
-        </div>
-
-        {/* ── MOBILE LOGIN ── */}
-        <div className="mobile-login">
-          {/* bg */}
-          <div style={{ position: 'fixed', inset: 0, zIndex: 0 }}>
-            <img src={campusBg} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            <div style={{ position: 'absolute', inset: 0, background: 'rgba(13,71,161,0.82)' }} />
-          </div>
-          {/* content */}
-          <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', padding: '48px 28px 40px' }}>
-            <Shield size={120} />
-            <h1 style={{ marginTop: 20, textAlign: 'center', color: '#fff', fontWeight: 700, fontSize: 26, lineHeight: 1.25, letterSpacing: '0.02em' }}>
-              UNIVERSIDAD<br />NACIONAL<br />DE PIURA
-            </h1>
-            <p style={{ marginTop: 8, marginBottom: 28, color: 'rgba(255,255,255,0.85)', fontSize: 18, fontWeight: 400 }}>Bienvenido</p>
-            <LoginForm usuario={usuario} setUsuario={setUsuario} contrasena={contrasena} setContrasena={setContrasena} loading={loading} error={error} onSubmit={handleSubmit} mobile={true} />
-          </div>
-        </div>
-
-        {/* ── MOBILE SERVICES ── */}
-        <div className="mobile-services">
-          <ServicesGrid mobile={true} />
-        </div>
-
-      </div>
-    </>
-  )
-}
-
-/* ─── LoginForm (shared between desktop & mobile) ────────────────────────────── */
-function LoginForm({
-  usuario, setUsuario, contrasena, setContrasena,
-  loading, error, onSubmit, mobile,
-}: {
-  usuario: string; setUsuario: (v: string) => void
-  contrasena: string; setContrasena: (v: string) => void
-  loading: boolean; error: string
-  onSubmit: (e: React.FormEvent) => void
-  mobile: boolean
-}) {
-  return (
-    <form onSubmit={onSubmit} style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <FloatingInput id={mobile ? 'm-usuario' : 'usuario'} label="Usuario"
-        value={usuario} onChange={setUsuario} mobile={mobile} />
-      <FloatingInput id={mobile ? 'm-contrasena' : 'contrasena'} label="Contraseña"
-        value={contrasena} onChange={setContrasena} isPassword mobile={mobile} />
+    <form onSubmit={handleSubmit} style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <FloatingInput id={mobile?'m-email':'d-email'} label="Correo institucional" value={email} onChange={setEmail} mobile={mobile} type="email" />
+      <FloatingInput id={mobile?'m-pwd':'d-pwd'}     label="Contraseña"           value={contrasena} onChange={setContrasena} isPassword mobile={mobile} />
 
       <AnimatePresence>
-        {error && (
-          <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-            style={{ color: mobile ? '#ffcdd2' : '#d32f2f', fontSize: 12, textAlign: 'center', marginTop: -4 }}>
-            {error}
-          </motion.p>
-        )}
+        {error && <motion.p initial={{ opacity:0, y:-4 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0 }}
+          style={{ color: mobile ? '#ffcdd2' : '#d32f2f', fontSize: 12, textAlign: 'center', marginTop: -4 }}>{error}</motion.p>}
       </AnimatePresence>
 
-      <motion.button type="submit" disabled={loading} whileTap={{ scale: 0.98 }}
-        style={{
-          width: '100%', padding: '14px 0', marginTop: 4,
-          background: '#1565c0', color: '#fff', border: 'none',
-          borderRadius: mobile ? 14 : 8,
-          fontSize: 16, fontWeight: 600, letterSpacing: '0.03em',
-          cursor: loading ? 'not-allowed' : 'pointer',
-          fontFamily: 'inherit',
-          opacity: loading ? 0.75 : 1,
-        }}
-      >
+      <motion.button type="submit" disabled={loading} whileTap={{ scale: 0.98 }} style={{
+        width: '100%', padding: '14px 0', marginTop: 4,
+        background: '#1565c0', color: '#fff', border: 'none',
+        borderRadius: mobile ? 14 : 8, fontSize: 16, fontWeight: 600,
+        cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', opacity: loading ? 0.75 : 1,
+      }}>
         {loading
-          ? <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-              <span style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.35)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite', display: 'inline-block' }} />
+          ? <span style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
+              <span style={{ width:16, height:16, border:'2px solid rgba(255,255,255,0.35)', borderTopColor:'#fff', borderRadius:'50%', animation:'spin 0.7s linear infinite', display:'inline-block' }} />
               Ingresando...
             </span>
-          : 'Ingresar'
-        }
+          : 'Ingresar'}
       </motion.button>
 
-      <button type="button" style={{
-        background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-        color: mobile ? 'rgba(255,255,255,0.85)' : '#1565c0', fontSize: 14, marginTop: -4,
-      }}>
+      <button type="button" style={{ background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', color: mobile ? 'rgba(255,255,255,0.85)' : '#1565c0', fontSize:14, marginTop:-4 }}>
         ¿Olvidaste tu contraseña?
       </button>
 
       {mobile && (
         <>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '4px 0' }}>
-            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.3)' }} />
-            <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13 }}>o</span>
-            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.3)' }} />
+          <div style={{ display:'flex', alignItems:'center', gap:12, margin:'4px 0' }}>
+            <div style={{ flex:1, height:1, background:'rgba(255,255,255,0.3)' }} />
+            <span style={{ color:'rgba(255,255,255,0.6)', fontSize:13 }}>o</span>
+            <div style={{ flex:1, height:1, background:'rgba(255,255,255,0.3)' }} />
           </div>
-          <button type="button" style={{
-            width: '100%', padding: '13px 0',
-            background: '#fff', border: 'none', borderRadius: 14,
-            fontSize: 15, fontWeight: 600, color: '#444',
-            cursor: 'pointer', fontFamily: 'inherit',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-          }}>
-            <svg width="18" height="18" viewBox="0 0 48 48">
-              <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-              <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-              <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-              <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-              <path fill="none" d="M0 0h48v48H0z"/>
-            </svg>
-            Iniciar sesión con Google
+          <button type="button" onClick={onRegister} style={{ width:'100%', padding:'13px 0', background:'rgba(255,255,255,0.15)', border:'1.5px solid rgba(255,255,255,0.4)', borderRadius:14, fontSize:15, fontWeight:600, color:'#fff', cursor:'pointer', fontFamily:'inherit' }}>
+            Crear cuenta
           </button>
         </>
       )}
+
+      {!mobile && (
+        <p style={{ textAlign:'center', fontSize:13, color:'#777', marginTop:4 }}>
+          ¿No tienes cuenta?{' '}
+          <button type="button" onClick={onRegister} style={{ background:'none', border:'none', color:'#1565c0', fontWeight:600, cursor:'pointer', fontFamily:'inherit', fontSize:13 }}>
+            Regístrate aquí
+          </button>
+        </p>
+      )}
     </form>
+  )
+}
+
+/* ─── Panel izquierdo compartido ─────────────────────────────────────────────── */
+function LeftPanel({ mode, onToggle }: { mode: 'login'|'register'; onToggle: () => void }) {
+  return (
+    <div className="left-panel">
+      <Shield size={112} />
+      <h1 style={{ marginTop:16, textAlign:'center', color:'#1a237e', fontWeight:700, fontSize:18, lineHeight:1.4, letterSpacing:'0.02em' }}>
+        UNIVERSIDAD<br />NACIONAL<br />DE PIURA
+      </h1>
+      <AnimatePresence mode="wait">
+        <motion.p key={mode} initial={{ opacity:0, y:4 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:-4 }}
+          style={{ marginTop:4, marginBottom:24, color:'#9e9e9e', fontSize:15 }}>
+          {mode === 'login' ? 'Bienvenido' : 'Crear cuenta'}
+        </motion.p>
+      </AnimatePresence>
+
+      <AnimatePresence mode="wait">
+        {mode === 'login'
+          ? <motion.div key="login" initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} style={{ width:'100%' }}>
+              <LoginForm mobile={false} onRegister={onToggle} />
+            </motion.div>
+          : <motion.div key="register" initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} style={{ width:'100%' }}>
+              <RegisterForm mobile={false} onBack={onToggle} />
+            </motion.div>
+        }
+      </AnimatePresence>
+      <div style={{ marginTop:32, width:40, height:4, background:'#e0e0e0', borderRadius:2 }} />
+    </div>
+  )
+}
+
+/* ─── Main ───────────────────────────────────────────────────────────────────── */
+export default function LoginPage() {
+  const [mode, setMode] = useState<'login'|'register'>('login')
+
+  return (
+    <>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .login-root { display:flex; height:100vh; width:100vw; overflow:hidden; font-family:'Segoe UI',system-ui,sans-serif; }
+        .left-panel  { width:320px; flex-shrink:0; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#fff; padding:32px 36px; box-shadow:2px 0 12px rgba(0,0,0,0.08); z-index:10; overflow-y:auto; }
+        .right-panel { flex:1; position:relative; display:flex; flex-direction:column; overflow:hidden; }
+        .mobile-section { display:none; }
+        @media (max-width:767px) {
+          .login-root  { flex-direction:column; height:auto; min-height:100vh; overflow-y:auto; }
+          .left-panel  { display:none; }
+          .right-panel { display:none; }
+          .mobile-section { display:flex; flex-direction:column; }
+        }
+      `}</style>
+
+      <div className="login-root">
+        {/* Desktop left */}
+        <LeftPanel mode={mode} onToggle={() => setMode(m => m === 'login' ? 'register' : 'login')} />
+
+        {/* Desktop right */}
+        <div className="right-panel">
+          <div style={{ position:'absolute', inset:0 }}>
+            <img src={campusBg} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+            <div style={{ position:'absolute', inset:0, background:'rgba(13,71,161,0.78)' }} />
+          </div>
+          <div style={{ position:'relative', zIndex:1, display:'flex', flexDirection:'column', height:'100%', padding:'20px 24px 16px' }}>
+            <ServicesGrid mobile={false} />
+            <p style={{ paddingTop:12, flexShrink:0, color:'rgba(255,255,255,0.4)', fontSize:36, fontWeight:700, lineHeight:1 }}>Bienvenido a</p>
+          </div>
+        </div>
+
+        {/* Mobile: login/register con fondo campus */}
+        <div className="mobile-section" style={{ minHeight:'100vh', position:'relative', alignItems:'center' }}>
+          <div style={{ position:'fixed', inset:0, zIndex:0 }}>
+            <img src={campusBg} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+            <div style={{ position:'absolute', inset:0, background:'rgba(13,71,161,0.82)' }} />
+          </div>
+          <div style={{ position:'relative', zIndex:1, display:'flex', flexDirection:'column', alignItems:'center', width:'100%', padding:'48px 28px 40px' }}>
+            <Shield size={120} />
+            <h1 style={{ marginTop:20, textAlign:'center', color:'#fff', fontWeight:700, fontSize:26, lineHeight:1.25 }}>
+              UNIVERSIDAD<br />NACIONAL<br />DE PIURA
+            </h1>
+            <AnimatePresence mode="wait">
+              <motion.p key={mode} initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
+                style={{ marginTop:8, marginBottom:28, color:'rgba(255,255,255,0.85)', fontSize:18 }}>
+                {mode === 'login' ? 'Bienvenido' : 'Crear cuenta'}
+              </motion.p>
+            </AnimatePresence>
+            <AnimatePresence mode="wait">
+              {mode === 'login'
+                ? <motion.div key="m-login" initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} style={{ width:'100%' }}>
+                    <LoginForm mobile onRegister={() => setMode('register')} />
+                  </motion.div>
+                : <motion.div key="m-register" initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} style={{ width:'100%' }}>
+                    <RegisterForm mobile onBack={() => setMode('login')} />
+                  </motion.div>
+              }
+            </AnimatePresence>
+          </div>
+        </div>
+
+        {/* Mobile: services */}
+        <div className="mobile-section" style={{ background:'#fff', padding:'20px 16px 32px', minHeight:'100vh' }}>
+          <ServicesGrid mobile />
+        </div>
+      </div>
+    </>
   )
 }
