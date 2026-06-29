@@ -10,6 +10,7 @@ export interface Usuario {
   carrera_id?: string
   dni?: string
   facultad_id?: string
+  telefono?: string
   activo: boolean
   avatar_url?: string
   created_at: string
@@ -62,6 +63,11 @@ export interface SolicitudReserva {
   revisado_por?: string
   observaciones?: string
   created_at: string
+}
+
+export interface SolicitudReservaExt extends SolicitudReserva {
+  auditorio_nombre?: string
+  docente_nombre?: string
 }
 
 export interface Reserva {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { signIn, signUpAlumno, signUpDocente, detectarRolPorEmail } from '../lib/auth'
@@ -106,40 +106,122 @@ function FloatingInput({ id, label, value, onChange, isPassword = false, mobile 
   )
 }
 
-/* ─── Select Field ───────────────────────────────────────────────────────────── */
-function SelectField({ id, label, value, onChange, options, mobile = false }: {
-  id: string; label: string; value: string; onChange: (v: string) => void
+/* ─── Combo Field (searchable) ───────────────────────────────────────────────── */
+function ComboField({ id, label, value, onSelect, options, mobile = false }: {
+  id: string; label: string; value: string; onSelect: (id: string, label: string) => void
   options: { value: string; label: string }[]; mobile?: boolean
 }) {
+  const [query,   setQuery]   = useState('')
+  const [open,    setOpen]    = useState(false)
   const [focused, setFocused] = useState(false)
-  const active = value !== ''
+  // Cuando hay un valor seleccionado, mostrar su etiqueta como texto del input
+  const selectedLabel = options.find(o => o.value === value)?.label ?? ''
+
+  // Sincronizar query con la selección cuando el campo gana foco
+  const handleFocus = () => {
+    setFocused(true)
+    setQuery('')   // limpia para que se vean todas las opciones al abrir
+    setOpen(true)
+  }
+
+  const handleBlur = () => {
+    // Pequeño delay para que el click en opción se registre antes de cerrar
+    setTimeout(() => {
+      setFocused(false)
+      setOpen(false)
+      setQuery('')
+    }, 150)
+  }
+
+  const handleSelect = (opt: { value: string; label: string }) => {
+    onSelect(opt.value, opt.label)
+    setQuery('')
+    setOpen(false)
+    setFocused(false)
+  }
+
+  const filtered = query.trim()
+    ? options.filter(o => o.label.toLowerCase().includes(query.toLowerCase()))
+    : options
+
+  const displayValue = focused ? query : selectedLabel
+  const lifted = focused || selectedLabel !== ''
+
   return (
-    <div style={{ position: 'relative', width: '100%', height: 56 }}>
+    <div style={{ position: 'relative', width: '100%' }}>
       <div style={{
-        position: 'absolute', inset: 0, borderRadius: mobile ? 14 : 8,
+        position: 'relative', height: 56, borderRadius: mobile ? 14 : 8,
         border: `${focused ? 2 : 1}px solid ${focused ? '#1565c0' : (mobile ? '#bbdefb' : '#aaaaaa')}`,
         background: focused ? '#e8f0fe' : (mobile ? '#f0f8ff' : '#ffffff'),
-        transition: 'border-color 150ms, background 150ms', pointerEvents: 'none',
-      }} />
-      <label htmlFor={id} style={{
-        position: 'absolute', left: 16, pointerEvents: 'none', userSelect: 'none',
-        transformOrigin: 'left top', transition: 'transform 150ms ease',
-        transform: active ? 'translateY(8px) scale(0.72)' : 'translateY(18px) scale(1)',
-        fontSize: 15, lineHeight: 1, color: focused ? '#1565c0' : '#1565c0', fontWeight: active ? 500 : 400,
-      }}>{label}</label>
-      <select id={id} value={value} onChange={e => onChange(e.target.value)}
-        onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
-        style={{
-          position: 'absolute', inset: 0, width: '100%', height: '100%',
-          background: 'transparent', border: 'none', outline: 'none',
-          borderRadius: mobile ? 14 : 8, fontSize: 15, color: '#111827',
-          paddingLeft: 16, paddingRight: 16, paddingTop: 22, paddingBottom: 4,
-          boxSizing: 'border-box', fontFamily: 'inherit', cursor: 'pointer',
-          appearance: 'none',
-        }}>
-        <option value="" disabled />
-        {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-      </select>
+        transition: 'border-color 150ms, background 150ms',
+      }}>
+        <label htmlFor={id} style={{
+          position: 'absolute', left: 16, pointerEvents: 'none', userSelect: 'none',
+          transformOrigin: 'left top', transition: 'transform 150ms ease',
+          transform: lifted ? 'translateY(8px) scale(0.72)' : 'translateY(18px) scale(1)',
+          fontSize: 15, lineHeight: 1, color: '#1565c0', fontWeight: lifted ? 500 : 400, zIndex: 1,
+        }}>{label}</label>
+        <input
+          id={id}
+          type="text"
+          autoComplete="off"
+          value={displayValue}
+          onChange={e => { setQuery(e.target.value); setOpen(true) }}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          placeholder={focused ? 'Escribe para buscar...' : ''}
+          style={{
+            position: 'absolute', inset: 0, width: '100%', height: '100%',
+            background: 'transparent', border: 'none', outline: 'none',
+            borderRadius: mobile ? 14 : 8, fontSize: 15, color: '#111827',
+            paddingLeft: 16, paddingRight: 36, paddingTop: 22, paddingBottom: 4,
+            boxSizing: 'border-box', fontFamily: 'inherit',
+          }}
+        />
+        {/* Chevron */}
+        <div style={{ position: 'absolute', right: 14, top: '50%', transform: `translateY(-50%) rotate(${open ? 180 : 0}deg)`, transition: 'transform 150ms', pointerEvents: 'none', color: '#1565c0' }}>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        </div>
+      </div>
+
+      {/* Dropdown */}
+      <AnimatePresence>
+        {open && filtered.length > 0 && (
+          <motion.ul
+            initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.12 }}
+            style={{
+              position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 999,
+              background: '#fff', border: '1px solid #e0e0e0', borderRadius: 10,
+              boxShadow: '0 4px 16px rgba(0,0,0,0.12)', maxHeight: 220, overflowY: 'auto',
+              margin: 0, padding: '4px 0', listStyle: 'none',
+            }}
+          >
+            {filtered.map(opt => (
+              <li
+                key={opt.value}
+                onMouseDown={() => handleSelect(opt)}
+                style={{
+                  padding: '10px 16px', fontSize: 14, color: opt.value === value ? '#1565c0' : '#212121',
+                  cursor: 'pointer', fontWeight: opt.value === value ? 600 : 400,
+                  background: opt.value === value ? '#e8f0fe' : 'transparent',
+                  transition: 'background 100ms',
+                }}
+                onMouseEnter={e => { if (opt.value !== value) e.currentTarget.style.background = '#f5f5f5' }}
+                onMouseLeave={e => { e.currentTarget.style.background = opt.value === value ? '#e8f0fe' : 'transparent' }}
+              >
+                {opt.label}
+              </li>
+            ))}
+          </motion.ul>
+        )}
+        {open && query.trim() !== '' && filtered.length === 0 && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 999, background: '#fff', border: '1px solid #e0e0e0', borderRadius: 10, padding: '14px 16px', fontSize: 13, color: '#9e9e9e', boxShadow: '0 4px 16px rgba(0,0,0,0.1)' }}>
+            No se encontraron resultados
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
@@ -203,43 +285,74 @@ function ServicesGrid({ mobile = false }: { mobile?: boolean }) {
 
 /* ─── Register Form ──────────────────────────────────────────────────────────── */
 function RegisterForm({ mobile, onBack }: { mobile: boolean; onBack: () => void }) {
-  const [email,    setEmail]    = useState('')
-  const [nombres,  setNombres]  = useState('')
-  const [apellidos,setApellidos]= useState('')
-  const [password, setPassword] = useState('')
-  const [campo1,   setCampo1]   = useState('')   // código (alumno) | DNI (docente)
-  const [campo2,   setCampo2]   = useState('')   // carrera_id (alumno) | facultad_id (docente)
-  const [loading,  setLoading]  = useState(false)
-  const [error,    setError]    = useState('')
-  const [success,  setSuccess]  = useState(false)
-  const [carreras, setCarreras] = useState<{value:string;label:string}[]>([])
-  const [facultades,setFacultades]=useState<{value:string;label:string}[]>([])
+  const [email,      setEmail]      = useState('')
+  const [nombres,    setNombres]    = useState('')
+  const [apellidos,  setApellidos]  = useState('')
+  const [password,   setPassword]   = useState('')
+  const [campo1,     setCampo1]     = useState('')   // código universitario (alumno) | DNI (docente)
+  const [telefono,   setTelefono]   = useState('')
+  const [facultadId, setFacultadId] = useState('')
+  const [carreraId,  setCarreraId]  = useState('')
+  const [loading,    setLoading]    = useState(false)
+  const [error,      setError]      = useState('')
+  const [success,    setSuccess]    = useState(false)
 
-  const rol = detectarRolPorEmail(email)
+  // Catálogos
+  const [facultades, setFacultades] = useState<{value:string;label:string}[]>([])
+  const [todasCarreras, setTodasCarreras] = useState<{value:string;label:string;facultad_id:string}[]>([])
+
+  const rol       = detectarRolPorEmail(email)
   const esAlumno  = rol === 'alumno'
   const esDocente = rol === 'docente'
 
+  // Carreras filtradas por la facultad elegida
+  const carrerasFiltradas = facultadId
+    ? todasCarreras.filter(c => c.facultad_id === facultadId)
+    : todasCarreras
+
   useEffect(() => {
-    supabase.from('carreras').select('id,nombre').then(({ data }) => {
-      if (data) setCarreras(data.map(c => ({ value: c.id, label: c.nombre })))
-    })
-    supabase.from('facultades').select('id,nombre').then(({ data }) => {
+    supabase.from('facultades').select('id,nombre').order('nombre').then(({ data }) => {
       if (data) setFacultades(data.map(f => ({ value: f.id, label: f.nombre })))
     })
+    supabase.from('carreras').select('id,nombre,facultad_id').order('nombre').then(({ data }) => {
+      if (data) setTodasCarreras(data.map(c => ({ value: c.id, label: c.nombre, facultad_id: c.facultad_id })))
+    })
   }, [])
+
+  // Resetear carrera al cambiar facultad
+  const handleFacultadSelect = (id: string) => {
+    setFacultadId(id)
+    setCarreraId('')
+  }
+
+  const validarTelefono = (t: string) => /^9\d{8}$/.test(t)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     if (!rol) { setError('Correo no válido. Usa @alumnos.unp.edu.pe o @unp.edu.pe'); return }
     if (email === 'admin@unp.edu.pe') { setError('No puedes registrarte con ese correo.'); return }
-    if (!nombres || !apellidos || !password || !campo1 || !campo2) { setError('Completa todos los campos.'); return }
+    if (!nombres.trim() || !apellidos.trim() || !password || !campo1.trim()) {
+      setError('Completa todos los campos obligatorios.'); return
+    }
+    if (!validarTelefono(telefono)) {
+      setError('El teléfono debe tener 9 dígitos y empezar con 9.'); return
+    }
+    if (esAlumno && !facultadId) { setError('Selecciona tu facultad.'); return }
+    if (esAlumno && !carreraId)  { setError('Selecciona tu escuela/carrera.'); return }
+
     setLoading(true)
     try {
       if (esAlumno) {
-        await signUpAlumno({ email, password, nombres, apellidos, codigo_universitario: campo1, carrera_id: campo2 })
+        await signUpAlumno({
+          email, password, nombres, apellidos,
+          codigo_universitario: campo1,
+          carrera_id: carreraId,
+          facultad_id: facultadId,
+          telefono,
+        })
       } else {
-        await signUpDocente({ email, password, nombres, apellidos, dni: campo1, facultad_id: campo2 })
+        await signUpDocente({ email, password, nombres, apellidos, dni: campo1, telefono })
       }
       setSuccess(true)
     } catch (err: unknown) {
@@ -264,48 +377,101 @@ function RegisterForm({ mobile, onBack }: { mobile: boolean; onBack: () => void 
     </div>
   )
 
+  const p = mobile ? 'm' : 'd'
+
   return (
     <form onSubmit={handleSubmit} style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <FloatingInput id={`${mobile?'m':'d'}-reg-email`}    label="Correo institucional" value={email}     onChange={setEmail}     mobile={mobile} type="email" />
+      <FloatingInput id={`${p}-reg-email`} label="Correo institucional" value={email} onChange={setEmail} mobile={mobile} type="email" />
 
       <AnimatePresence>
       {(esAlumno || esDocente) && (
-        <motion.div initial={{ opacity:0, height:0 }} animate={{ opacity:1, height:'auto' }} exit={{ opacity:0, height:0 }}
-          style={{ display:'flex', flexDirection:'column', gap:12, overflow:'hidden' }}>
+        <motion.div
+          initial={{ opacity:0, height:0 }} animate={{ opacity:1, height:'auto' }} exit={{ opacity:0, height:0 }}
+          style={{ display:'flex', flexDirection:'column', gap:12, overflow:'visible' }}
+        >
+          {/* Nombres y apellidos */}
           <div style={{ display:'flex', gap:12 }}>
-            <FloatingInput id={`${mobile?'m':'d'}-reg-nom`}  label="Nombres"   value={nombres}   onChange={setNombres}   mobile={mobile} />
-            <FloatingInput id={`${mobile?'m':'d'}-reg-ape`}  label="Apellidos" value={apellidos} onChange={setApellidos} mobile={mobile} />
+            <FloatingInput id={`${p}-nom`} label="Nombres"   value={nombres}   onChange={setNombres}   mobile={mobile} />
+            <FloatingInput id={`${p}-ape`} label="Apellidos" value={apellidos} onChange={setApellidos} mobile={mobile} />
           </div>
+
+          {/* Código/DNI */}
           {esAlumno
-            ? <FloatingInput id={`${mobile?'m':'d'}-reg-cod`} label="Código universitario" value={campo1} onChange={setCampo1} mobile={mobile} />
-            : <FloatingInput id={`${mobile?'m':'d'}-reg-dni`} label="DNI" value={campo1} onChange={setCampo1} mobile={mobile} type="number" />
+            ? <FloatingInput id={`${p}-cod`} label="Código universitario" value={campo1} onChange={setCampo1} mobile={mobile} />
+            : <FloatingInput id={`${p}-dni`} label="DNI" value={campo1} onChange={v => { if (/^\d{0,8}$/.test(v)) setCampo1(v) }} mobile={mobile} type="text" />
           }
-          {esAlumno
-            ? <SelectField id={`${mobile?'m':'d'}-reg-car`} label="Carrera"  value={campo2} onChange={setCampo2} options={carreras}   mobile={mobile} />
-            : <SelectField id={`${mobile?'m':'d'}-reg-fac`} label="Facultad" value={campo2} onChange={setCampo2} options={facultades} mobile={mobile} />
-          }
-          <FloatingInput id={`${mobile?'m':'d'}-reg-pwd`} label="Contraseña" value={password} onChange={setPassword} isPassword mobile={mobile} />
-          <p style={{ fontSize: 11, color: mobile ? 'rgba(255,255,255,0.6)' : '#9e9e9e', margin: '-4px 0 0', textAlign: 'center' }}>
-            {esAlumno ? 'Registrándote como Alumno' : 'Registrándote como Docente'}
+
+          {/* Teléfono — ambos roles */}
+          <div style={{ position:'relative' }}>
+            <FloatingInput
+              id={`${p}-tel`}
+              label="Teléfono (9 dígitos)"
+              value={telefono}
+              onChange={v => { if (/^\d{0,9}$/.test(v)) setTelefono(v) }}
+              mobile={mobile}
+              type="tel"
+            />
+            {telefono.length > 0 && (
+              <span style={{
+                position:'absolute', right:12, top:'50%', transform:'translateY(-50%)',
+                fontSize:11, fontWeight:600,
+                color: validarTelefono(telefono) ? '#2e7d32' : '#e65100',
+              }}>
+                {telefono.length}/9
+              </span>
+            )}
+          </div>
+
+          {/* Alumno: Facultad → Escuela/Carrera en cascada */}
+          {esAlumno && (
+            <>
+              <ComboField
+                id={`${p}-fac`}
+                label="Facultad"
+                value={facultadId}
+                onSelect={handleFacultadSelect}
+                options={facultades}
+                mobile={mobile}
+              />
+              <ComboField
+                id={`${p}-car`}
+                label={facultadId ? 'Escuela / Carrera' : 'Escuela / Carrera (elige facultad primero)'}
+                value={carreraId}
+                onSelect={(id) => setCarreraId(id)}
+                options={carrerasFiltradas}
+                mobile={mobile}
+              />
+            </>
+          )}
+
+          {/* Contraseña */}
+          <FloatingInput id={`${p}-pwd`} label="Contraseña" value={password} onChange={setPassword} isPassword mobile={mobile} />
+
+          <p style={{ fontSize: 11, color: mobile ? 'rgba(255,255,255,0.6)' : '#9e9e9e', margin: '-4px 0 0', textAlign:'center' }}>
+            {esAlumno ? '🎓 Registrándote como Alumno' : '👨‍🏫 Registrándote como Docente'}
           </p>
         </motion.div>
       )}
       </AnimatePresence>
 
       <AnimatePresence>
-        {error && <motion.p initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
-          style={{ color: mobile ? '#ffcdd2' : '#d32f2f', fontSize: 12, textAlign: 'center', margin: 0 }}>{error}</motion.p>}
+        {error && (
+          <motion.p initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
+            style={{ color: mobile ? '#ffcdd2' : '#d32f2f', fontSize: 12, textAlign:'center', margin: 0 }}>
+            {error}
+          </motion.p>
+        )}
       </AnimatePresence>
 
       <button type="submit" disabled={loading || (!esAlumno && !esDocente)} style={{
-        width: '100%', padding: '13px 0', background: '#1565c0', color: '#fff',
-        border: 'none', borderRadius: mobile ? 14 : 8, fontSize: 15, fontWeight: 600,
-        cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'inherit',
+        width:'100%', padding:'13px 0', background:'#1565c0', color:'#fff',
+        border:'none', borderRadius: mobile ? 14 : 8, fontSize:15, fontWeight:600,
+        cursor: loading ? 'not-allowed' : 'pointer', fontFamily:'inherit',
         opacity: loading || (!esAlumno && !esDocente) ? 0.65 : 1,
       }}>
         {loading ? 'Registrando...' : 'Crear cuenta'}
       </button>
-      <button type="button" onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', color: mobile ? 'rgba(255,255,255,0.8)' : '#1565c0', fontSize: 13 }}>
+      <button type="button" onClick={onBack} style={{ background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', color: mobile ? 'rgba(255,255,255,0.8)' : '#1565c0', fontSize:13 }}>
         ← Volver al inicio de sesión
       </button>
     </form>

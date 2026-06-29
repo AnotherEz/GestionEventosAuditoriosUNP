@@ -19,6 +19,8 @@ export async function signUpAlumno(params: {
   apellidos: string
   codigo_universitario: string
   carrera_id: string
+  facultad_id: string
+  telefono: string
 }) {
   if (!params.email.endsWith('@alumnos.unp.edu.pe'))
     throw new Error('El correo debe terminar en @alumnos.unp.edu.pe')
@@ -32,6 +34,8 @@ export async function signUpAlumno(params: {
         apellidos: params.apellidos,
         codigo_universitario: params.codigo_universitario,
         carrera_id: params.carrera_id,
+        facultad_id: params.facultad_id,
+        telefono: params.telefono,
       },
     },
   })
@@ -45,7 +49,7 @@ export async function signUpDocente(params: {
   nombres: string
   apellidos: string
   dni: string
-  facultad_id: string
+  telefono: string
 }) {
   if (!params.email.endsWith('@unp.edu.pe') || params.email === 'admin@unp.edu.pe')
     throw new Error('El correo debe terminar en @unp.edu.pe')
@@ -58,7 +62,7 @@ export async function signUpDocente(params: {
         nombres: params.nombres,
         apellidos: params.apellidos,
         dni: params.dni,
-        facultad_id: params.facultad_id,
+        telefono: params.telefono,
       },
     },
   })
@@ -81,8 +85,45 @@ export async function getCurrentUser(): Promise<Usuario | null> {
     .eq('id', session.user.id)
     .single()
 
-  if (error || !data) return null
-  return data as Usuario
+  // Perfil encontrado correctamente
+  if (!error && data) return data as Usuario
+
+  // Sin perfil (ej: admin creado directamente en Supabase Dashboard sin metadatos)
+  // Intentamos crearlo automáticamente
+  const email = session.user.email ?? ''
+  const rol = detectarRolPorEmail(email) ?? 'alumno'
+  const meta = session.user.user_metadata ?? {}
+  const nombres = (meta.nombres as string) || email.split('@')[0]
+  const apellidos = (meta.apellidos as string) || ''
+
+  const { data: created, error: createError } = await supabase
+    .from('usuarios')
+    .insert({
+      id: session.user.id,
+      nombres,
+      apellidos,
+      email,
+      rol,
+      activo: true,
+    })
+    .select()
+    .single()
+
+  if (createError || !created) {
+    // La tabla no existe aún → usuario mínimo para no bloquear el login
+    return {
+      id: session.user.id,
+      nombres,
+      apellidos,
+      email,
+      rol,
+      activo: true,
+      created_at: session.user.created_at ?? new Date().toISOString(),
+      _sinPerfil: true,
+    } as Usuario & { _sinPerfil: boolean }
+  }
+
+  return created as Usuario
 }
 
 export function detectarRolPorEmail(email: string): Rol | null {
