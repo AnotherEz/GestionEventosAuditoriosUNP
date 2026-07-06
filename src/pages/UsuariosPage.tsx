@@ -105,7 +105,8 @@ export default function UsuariosPage() {
         </div>
       ) : (
         <div style={{ background: '#fff', borderRadius: 14, border: '1px solid #e8eaed', overflow: 'hidden' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+         <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 720 }}>
             <thead>
               <tr style={{ background: '#f9fafb' }}>
                 {['Usuario', 'Rol', 'Facultad / Carrera', 'Registro', 'Estado', 'Acciones'].map(h => (
@@ -209,6 +210,7 @@ export default function UsuariosPage() {
               })}
             </tbody>
           </table>
+         </div>
         </div>
       )}
     </Layout>

@@ -1,5 +1,4 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
-import { supabase } from './supabase'
 import { getCurrentUser } from './auth'
 import type { Usuario } from './types'
 
@@ -16,16 +15,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   const load = async () => {
+    setLoading(true)
     const u = await getCurrentUser()
     setUser(u)
     setLoading(false)
   }
 
-  useEffect(() => {
-    load()
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => load())
-    return () => subscription.unsubscribe()
-  }, [])
+  useEffect(() => { load() }, [])
 
   return (
     <AuthContext.Provider value={{ user, loading, refresh: load }}>

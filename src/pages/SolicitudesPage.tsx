@@ -135,60 +135,67 @@ function AdminSolicitudes({ userId }: { userId: string }) {
         </div>
       )}
 
-      {/* Modal revisión */}
+      {/* Modal revisión - AHORA SÍ CON LA CURA DE FRAMER */}
       <AnimatePresence>
         {selected && (
           <>
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setSelected(null)}
-              style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 100 }}
+              style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.6)', zIndex: 100, backdropFilter: 'blur(3px)' }}
             />
             <motion.div
-              initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
+              // LA MAGIA DE FRAMER AQUÍ
+              initial={{ opacity: 0, scale: 0.95, x: '-50%', y: '-45%' }}
+              animate={{ opacity: 1, scale: 1, x: '-50%', y: '-50%' }}
+              exit={{ opacity: 0, scale: 0.95, x: '-50%', y: '-45%' }}
               style={{
-                position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
+                position: 'fixed', top: '50%', left: '50%',
                 background: '#fff', borderRadius: 16, padding: 28, width: '90%', maxWidth: 480, zIndex: 101,
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-                <h2 style={{ fontSize: 17, fontWeight: 700, color: '#1a237e', margin: 0 }}>Revisar Solicitud</h2>
-                <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={20} /></button>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                <h2 style={{ fontSize: 18, fontWeight: 700, color: '#1a237e', margin: 0 }}>Revisar Solicitud</h2>
+                <button onClick={() => setSelected(null)} style={{ background: '#f3f4f6', border: 'none', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#4b5563', transition: 'background 0.2s' }}><X size={20} /></button>
               </div>
 
-              <div style={{ background: '#f5f7fa', borderRadius: 10, padding: 14, marginBottom: 16 }}>
-                <p style={{ fontSize: 14, fontWeight: 600, color: '#212121', margin: '0 0 4px' }}>{selected.titulo_evento}</p>
-                <p style={{ fontSize: 13, color: '#555', margin: 0 }}>
+              <div style={{ background: '#f8fafc', borderRadius: 10, padding: 16, marginBottom: 20, border: '1px solid #e2e8f0' }}>
+                <p style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', margin: '0 0 6px' }}>{selected.titulo_evento}</p>
+                <p style={{ fontSize: 13, color: '#64748b', margin: 0 }}>
                   {(selected as SolicitudReservaExt).auditorio_nombre} · {fmtFecha(selected.fecha_inicio)}
+                </p>
+                <p style={{ fontSize: 13, color: '#475569', margin: '8px 0 0' }}>
+                  <strong>Docente:</strong> {selected.docente_nombre}
                 </p>
               </div>
 
-              <div style={{ marginBottom: 20 }}>
-                <label style={{ fontSize: 13, fontWeight: 600, color: '#555', display: 'block', marginBottom: 6 }}>
+              <div style={{ marginBottom: 24 }}>
+                <label style={{ fontSize: 13, fontWeight: 600, color: '#334155', display: 'block', marginBottom: 8 }}>
                   Observaciones (opcional)
                 </label>
                 <textarea
                   rows={3} value={obs} onChange={e => setObs(e.target.value)}
                   placeholder="Indica el motivo del rechazo o añade notas para el docente..."
-                  style={{ width: '100%', padding: '10px 12px', border: '1px solid #e0e0e0', borderRadius: 8, fontSize: 14, fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box' }}
+                  style={{ width: '100%', padding: '12px', border: '1px solid #cbd5e1', borderRadius: 10, fontSize: 14, fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box', outline: 'none' }}
+                  onFocus={e => e.target.style.borderColor = '#1565c0'}
+                  onBlur={e => e.target.style.borderColor = '#cbd5e1'}
                 />
               </div>
 
-              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <div style={{ display: 'flex', gap: 12 }}>
                 <button onClick={() => handleRevisar('rechazado')} disabled={processing} style={{
-                  padding: '10px 18px', background: '#fff', border: '1px solid #d32f2f',
-                  color: '#d32f2f', borderRadius: 10, cursor: processing ? 'not-allowed' : 'pointer',
-                  fontSize: 14, fontWeight: 600, fontFamily: 'inherit',
+                  flex: 1, padding: '12px', background: '#fff', border: '1px solid #fecaca',
+                  color: '#dc2626', borderRadius: 10, cursor: processing ? 'not-allowed' : 'pointer',
+                  fontSize: 14, fontWeight: 600, fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
                 }}>
-                  <XCircle size={15} style={{ marginRight: 6, verticalAlign: 'middle' }} />
-                  Rechazar
+                  <XCircle size={18} /> Rechazar
                 </button>
                 <button onClick={() => handleRevisar('aprobado')} disabled={processing} style={{
-                  padding: '10px 18px', background: processing ? '#81c784' : '#2e7d32', color: '#fff',
+                  flex: 1, padding: '12px', background: processing ? '#86efac' : '#16a34a', color: '#fff',
                   border: 'none', borderRadius: 10, cursor: processing ? 'not-allowed' : 'pointer',
-                  fontSize: 14, fontWeight: 600, fontFamily: 'inherit',
+                  fontSize: 14, fontWeight: 600, fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
                 }}>
-                  <CheckCircle size={15} style={{ marginRight: 6, verticalAlign: 'middle' }} />
-                  Aprobar
+                  <CheckCircle size={18} /> Aprobar
                 </button>
               </div>
             </motion.div>
@@ -329,7 +336,7 @@ function NuevaSolicitudForm({ userId, onCreated }: { userId: string; onCreated: 
           />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12 }}>
           <div>
             <label style={{ fontSize: 13, fontWeight: 600, color: '#555', display: 'block', marginBottom: 4 }}>Fecha inicio *</label>
             <input type="datetime-local" value={form.fecha_inicio} onChange={e => setForm(f => ({ ...f, fecha_inicio: e.target.value }))}

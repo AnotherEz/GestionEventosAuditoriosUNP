@@ -1,0 +1,137 @@
+================================================================================
+   PROPUESTA INDIVIDUAL DEL PROYECTO — ENFOQUE DE PROYECCION SOCIAL
+   Sistema de Gestion de Eventos y Reservacion de Cupos para Auditorios - UNP
+================================================================================
+   Trabajo individual — perspectiva personal
+   Curso: [completar segun corresponda]
+   Ingenieria Informatica — Universidad Nacional de Piura
+   Fecha: 01/07/2026
+================================================================================
+
+
+1. PRESENTACION DEL SISTEMA
+================================================================================
+
+El proyecto que como grupo estamos desarrollando es un Sistema de Gestion de
+Eventos y Reservacion de Cupos para Auditorios de la Universidad Nacional de
+Piura. Se trata de una aplicacion web pensada para que la universidad cuente
+con una herramienta digital, propia y adaptada a su realidad, para organizar
+todo lo relacionado a auditorios y eventos academicos: conferencias, charlas,
+seminarios y actividades similares que hoy en dia se coordinan de forma
+manual o informal.
+
+Desde mi perspectiva individual, el aporte central de este sistema no es
+unicamente tecnico, sino social: busca resolver un problema que afecta
+directamente a la comunidad universitaria en su dia a dia, mejorando el
+acceso a la informacion academica y la participacion estudiantil.
+
+
+2. MI PERSPECTIVA SOBRE EL PROBLEMA QUE ATIENDE
+================================================================================
+
+Como estudiante de la UNP, he vivido de cerca la dificultad de enterarme a
+tiempo de eventos academicos relevantes para mi carrera. Muchas veces la
+informacion llega tarde, se comunica solo por redes sociales de forma
+dispersa, o simplemente no llega porque no existe un canal unico y
+confiable donde consultar que actividades estan disponibles.
+
+Del mismo modo, he sido testigo de que los docentes deben gestionar de
+manera informal el uso de auditorios: coordinaciones por correo, llamadas,
+o tramites presenciales sin un seguimiento claro de si su solicitud fue
+aceptada o no. Esto genera perdida de tiempo, desorden administrativo, y
+en algunos casos, que espacios como auditorios queden subutilizados por
+falta de un sistema de reserva claro y accesible.
+
+Considero que este es un problema real y no menor: la universidad tiene
+una infraestructura fisica (7 auditorios entre el central y los de
+facultades) que no siempre se aprovecha de forma eficiente porque falta
+una herramienta digital que centralice su gestion.
+
+
+3. COMO EL SISTEMA APORTA A LA PROYECCION SOCIAL DE LA UNP
+================================================================================
+
+Considero que este proyecto tiene un impacto directo en tres dimensiones
+de la vida universitaria:
+
+   A) ACCESO EQUITATIVO A LA INFORMACION ACADEMICA
+      Actualmente, la informacion sobre eventos suele llegar de forma
+      desigual: quienes tienen mas contacto con ciertos grupos o
+      profesores se enteran primero, mientras que otros estudiantes
+      quedan excluidos simplemente por falta de un canal formal. Un
+      sistema centralizado, donde todo alumno con su correo institucional
+      pueda ver el catalogo completo de eventos disponibles, democratiza
+      el acceso a estas oportunidades academicas, sin importar la
+      facultad, el circulo social o el nivel de participacion previa
+      del estudiante.
+
+   B) FOMENTO DE LA PARTICIPACION ESTUDIANTIL EN ACTIVIDADES ACADEMICAS
+      Uno de los aportes que mas valoro de este proyecto es el sistema de
+      recomendaciones por afinidad de carrera. Esto significa que un
+      estudiante no solo vera una lista generica de eventos, sino que el
+      sistema le sugerira aquellos que realmente se relacionan con su
+      formacion profesional. Esto incentiva una participacion mas
+      consciente y relevante, en lugar de una asistencia dispersa o poco
+      significativa, fortaleciendo el vinculo entre la formacion
+      academica y las actividades complementarias que ofrece la
+      universidad.
+
+   C) MODERNIZACION DE LA GESTION ADMINISTRATIVA UNIVERSITARIA
+      Al formalizar el flujo de solicitud, aprobacion y publicacion de
+      eventos, el sistema aporta transparencia y orden a un proceso que
+      hoy depende de coordinaciones informales. Esto beneficia
+      directamente a los docentes y decanos, quienes ganan una
+      herramienta clara para organizar sus actividades academicas, y
+      tambien a la institucion, que pasa a contar con un registro
+      historico digital de los eventos realizados en sus auditorios algo
+      que hoy no existe de manera centralizada.
+
+
+4. POR QUE ESTE PROYECTO ES PERTINENTE PARA LA UNP HOY
+================================================================================
+
+Bajo mi perspectiva, este sistema no busca reemplazar al Campus Virtual
+UNP, sino complementarlo, simulando desde ya una futura integracion. Por
+eso el equipo decidio que la pantalla de inicio de sesion sea identica a
+la del Campus Virtual real: no es un capricho de diseño, sino una decision
+pensada para que, si en algun momento la universidad decidiera adoptar una
+herramienta como esta, la transicion para los usuarios sea natural y no
+represente una barrera de aprendizaje adicional.
+
+Ademas, al ser un sistema con roles diferenciados (administrador, docente
+y alumno), refleja de forma realista la jerarquia y dinamica de
+funcionamiento de la universidad, lo cual demuestra que la propuesta no es
+solo un ejercicio academico abstracto, sino un sistema pensado con
+seriedad para un caso de uso real e implementable.
+
+
+5. MI APORTE Y ROL DENTRO DEL PROYECTO
+================================================================================
+
+[Completar segun corresponda: describir aqui tu rol especifico dentro del
+equipo de 4 integrantes — por ejemplo: desarrollo del modulo de
+autenticacion, diseño de base de datos, diseño de interfaz, integracion
+con Supabase, etc. Esta seccion debe reflejar tu perspectiva individual
+sobre tu contribucion.]
+
+
+6. CONCLUSION PERSONAL
+================================================================================
+
+Considero que este proyecto, mas alla de ser un requisito academico,
+representa una oportunidad real de aportar una solucion util a un problema
+que la comunidad universitaria enfrenta actualmente. Su valor no esta solo
+en la tecnologia utilizada, sino en el impacto que puede generar en la
+forma en que los estudiantes acceden a oportunidades de formacion
+complementaria, y en como la universidad gestiona uno de sus recursos mas
+importantes: sus espacios para el encuentro academico.
+
+Desde mi punto de vista, un sistema como este contribuye directamente a
+fortalecer la vida academica y la proyeccion social de la UNP, al facilitar
+el acceso, la organizacion y la participacion en actividades que enriquecen
+la formacion profesional de sus estudiantes.
+
+
+================================================================================
+   Fin del documento
+================================================================================

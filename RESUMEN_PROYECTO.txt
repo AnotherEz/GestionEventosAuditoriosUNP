@@ -1,0 +1,244 @@
+================================================================================
+   SISTEMA DE GESTION DE EVENTOS Y RESERVACION DE CUPOS PARA AUDITORIOS
+                    Universidad Nacional de Piura (UNP)
+================================================================================
+   Integrantes del grupo: 4 personas
+   Carrera: Ingenieria Informatica — UNP
+   Fecha: Julio 2026
+================================================================================
+
+
+1. DESCRIPCION GENERAL DEL PROYECTO
+================================================================================
+
+El proyecto consiste en una aplicacion web universitaria para la Universidad
+Nacional de Piura (UNP) que digitaliza y centraliza la gestion de auditorios
+y eventos academicos institucionales.
+
+Actualmente, la UNP no cuenta con un sistema formal para que docentes soliciten
+el uso de auditorios, ni para que alumnos se inscriban a eventos de manera
+organizada. Este sistema resuelve ese problema.
+
+El sistema simula una futura integracion al Campus Virtual UNP existente
+(campusvirtual.unp.edu.pe). Su interfaz de login es visualmente identica a la
+del Campus Virtual oficial, para que la transicion sea natural para los usuarios.
+
+
+2. PROBLEMA QUE RESUELVE
+================================================================================
+
+Antes de este sistema:
+  - Los docentes tenian que solicitar auditorios de forma presencial o por email,
+    sin seguimiento formal del estado de su solicitud.
+  - No existia un catalogo digital de eventos para que los alumnos se enteraran
+    de actividades academicas.
+  - La asignacion de cupos era manual, sin control de aforo ni confirmaciones.
+  - No habia forma de recomendar eventos relevantes segun la carrera del alumno.
+
+Con este sistema:
+  - Todo el flujo de solicitud, aprobacion y publicacion de eventos es digital.
+  - Los alumnos pueden ver, reservar y gestionar su asistencia en linea.
+  - El sistema recomienda eventos segun la afinidad con la carrera del alumno.
+  - El administrador tiene control total sobre auditorios, solicitudes y usuarios
+    desde un panel centralizado.
+
+
+3. PRODUCTO FINAL — QUE ENTREGARA EL SISTEMA
+================================================================================
+
+Una aplicacion web accesible desde cualquier navegador, con los siguientes
+modulos funcionales:
+
+   [A] MODULO DE AUTENTICACION
+       - Pantalla de login identica al Campus Virtual UNP
+       - Registro de nuevos usuarios (alumnos y docentes)
+       - Deteccion automatica del rol segun dominio de correo:
+           @alumnos.unp.edu.pe  →  rol: Alumno
+           @unp.edu.pe          →  rol: Docente
+           admin@unp.edu.pe     →  rol: Administrador
+       - Adaptado para movil y escritorio
+
+   [B] MODULO DE AUDITORIOS
+       - Catalogo de los 7 auditorios de la UNP con capacidad y equipamiento
+       - Calendario de disponibilidad por auditorio
+       - El administrador puede agregar, editar o desactivar auditorios
+
+   [C] MODULO DE SOLICITUDES DE RESERVA
+       Vista del Docente:
+         - Formulario para solicitar un auditorio (titulo del evento, fecha,
+           horario, descripcion, numero estimado de asistentes)
+         - Seguimiento del estado de sus solicitudes:
+             Pendiente (en revision) / Aprobado / Rechazado
+       Vista del Administrador:
+         - Bandeja de solicitudes pendientes con notificacion
+         - Aprobar o rechazar con comentarios
+         - Al aprobar, el sistema crea el evento automaticamente
+
+   [D] MODULO DE EVENTOS
+       Vista del Administrador:
+         - Crear eventos directamente (sin solicitud previa)
+         - Gestionar todos los eventos del sistema
+         - Ver lista de asistentes por evento
+       Vista del Docente (evento aprobado):
+         - Completar y editar los detalles del evento
+         - Publicar el evento para que sea visible a todos
+         - Ver quienes se han inscrito
+
+   [E] MODULO DE RESERVA DE CUPOS (Catalogo de Eventos)
+       - Catalogo de eventos publicados con filtros por categoria, fecha y facultad
+       - Boton "Reservar mi cupo" con verificacion de disponibilidad
+       - Generacion de entrada con codigo QR como confirmacion
+       - Seccion "Mis Reservas" para cancelar si es necesario
+       - Sistema de recomendaciones: muestra "Recomendados para ti" segun
+         la carrera del alumno y la afinidad tematica del evento
+
+   [F] MODULO DE GESTION DE USUARIOS (solo Administrador)
+       - Lista completa de usuarios con filtros por rol y facultad
+       - Cambiar el rol de un usuario (ej: alumno de alto rendimiento
+         que necesita permisos de docente)
+       - Desactivar o reactivar cuentas (no se eliminan usuarios)
+
+   [G] DASHBOARD CON ESTADISTICAS
+       - Indicadores clave: eventos activos, auditorios ocupados, total de
+         reservas, usuarios registrados
+       - Proximos eventos
+       - Vista personalizada segun el rol del usuario que inicio sesion
+
+
+4. ROLES DE USUARIO
+================================================================================
+
+   ADMINISTRADOR (1 unico)
+   -------------------------
+   Correo: admin@unp.edu.pe
+   Puede hacer todo: registrar eventos directamente, aprobar o rechazar
+   solicitudes de docentes, gestionar todos los usuarios (cambiar roles,
+   activar/desactivar), ver estadisticas globales.
+   NO puede eliminar usuarios, solo desactivarlos.
+
+   DOCENTE / DECANO
+   -------------------------
+   Correo institucional: nombre@unp.edu.pe
+   Registro con: DNI + facultad
+   Flujo para organizar un evento:
+     1. Solicita un auditorio al administrador
+     2. El admin revisa y aprueba (o rechaza con motivo)
+     3. Si es aprobado, el sistema crea automaticamente el evento
+     4. El docente completa los detalles y lo publica
+   Ademas puede asistir a eventos de otros como cualquier usuario.
+
+   ALUMNO
+   -------------------------
+   Correo institucional: nombre@alumnos.unp.edu.pe
+   Registro con: codigo universitario + carrera
+   Puede ver el catalogo de eventos publicados, reservar su cupo,
+   cancelar su reserva y recibir recomendaciones segun su carrera.
+
+
+5. TECNOLOGIAS UTILIZADAS
+================================================================================
+
+   Capa              Tecnologia                  Version
+   ----------------------------------------------------------------
+   Frontend          React                       19.2.7
+   Lenguaje          TypeScript                  6.0.2
+   Bundler           Vite                        8.1.0
+   Estilos           Tailwind CSS v4             4.3.1
+   Animaciones       Framer Motion               12.42.0
+   Iconos            Lucide React                1.21.0
+   Enrutamiento      React Router DOM            7.1.8.0
+   Base de datos     Supabase (PostgreSQL)       2.108.2
+   Autenticacion     Supabase Auth               (incluido)
+   Seguridad BD      Row Level Security (RLS)    (PostgreSQL nativo)
+
+   Supabase actua como backend completo: base de datos PostgreSQL, autenticacion
+   de usuarios, y politicas de seguridad a nivel de fila (RLS) para que cada
+   usuario solo acceda a lo que le corresponde.
+
+
+6. BASE DE DATOS — ESTRUCTURA
+================================================================================
+
+   Tabla                  Descripcion
+   ----------------------------------------------------------------
+   usuarios               Perfiles de todos los usuarios (rol, carrera, facultad)
+   facultades             13 facultades reales de la UNP
+   carreras               24 carreras reales distribuidas por facultad
+   auditorios             7 auditorios con capacidad y equipamiento
+   categorias             9 categorias tematicas de eventos
+   categoria_carreras     Relacion: que categorias son afines a cada carrera
+   solicitudes_reserva    Solicitudes de docentes para reservar auditorios
+   eventos                Eventos publicados o en borrador
+   reservas               Inscripciones de usuarios a eventos
+
+   Automatizaciones en la base de datos:
+   - Al registrarse un usuario → se crea su perfil automaticamente con su rol
+   - Al aprobar una solicitud → se crea el evento en estado borrador automaticamente
+   - Al reservar un cupo → el contador de inscritos se actualiza en tiempo real
+   - Si un evento esta lleno → el sistema bloquea nuevas reservas automaticamente
+
+   Datos cargados en el sistema:
+   - 13 facultades de la UNP: FII, FIM, FC, FCA, FDCS, FE, FA, FZ, FIP, FAU,
+     FMH, FCS, FED
+   - 24 carreras universitarias reales
+   - 7 auditorios: Auditorio Central (500 personas) + 6 auditorios de facultades
+   - 9 categorias: Tecnologia, Derecho, Salud, Ciencias Exactas, Administracion,
+     Ingenieria, Medio Ambiente, Cultura y Arte, Economia y Finanzas
+
+
+7. AVANCE ACTUAL DEL PROYECTO
+================================================================================
+
+   COMPLETADO:
+   [x] Pantalla de login identica al Campus Virtual UNP (desktop y movil)
+   [x] Formulario de registro con deteccion automatica de rol por email
+   [x] Campos condicionales segun tipo de usuario (alumno vs docente)
+   [x] Animaciones de transicion entre login y registro
+   [x] Sistema de autenticacion conectado a Supabase
+   [x] Proteccion de rutas segun si el usuario esta autenticado
+   [x] Control de usuarios desactivados (no pueden acceder aunque tengan cuenta)
+   [x] Dashboard base con estructura de sidebar y KPIs
+   [x] Esquema completo de base de datos diseñado
+   [x] Datos reales de la UNP preparados para cargar
+   [x] Arquitectura de tipos TypeScript para todo el sistema
+
+   PENDIENTE DE CONSTRUIR:
+   [ ] Modulo de Auditorios
+   [ ] Modulo de Solicitudes de Reserva
+   [ ] Modulo de Gestion de Eventos
+   [ ] Modulo de Catalogo y Reserva de Cupos
+   [ ] Sistema de Recomendaciones por carrera
+   [ ] Modulo de Gestion de Usuarios
+   [ ] Dashboard con datos reales y estadisticas
+
+
+8. COMO AYUDA A LA UNIVERSIDAD
+================================================================================
+
+   PARA LOS ALUMNOS:
+   - Enterarse de eventos academicos relevantes para su carrera
+   - Inscribirse en linea sin filas ni tramites presenciales
+   - Recibir recomendaciones personalizadas segun su carrera
+   - Tener un historial de eventos a los que ha asistido o planea asistir
+
+   PARA LOS DOCENTES Y DECANOS:
+   - Solicitar un auditorio digitalmente con seguimiento en tiempo real
+   - Gestionar su propio evento una vez aprobado
+   - Ver quienes se han inscrito a su evento
+
+   PARA EL ADMINISTRADOR:
+   - Panel centralizado para gestionar todos los espacios y eventos
+   - Control de flujo de solicitudes con aprobacion/rechazo documentado
+   - Gestion de usuarios con control de acceso por roles
+   - Estadisticas de uso de auditorios y participacion en eventos
+
+   PARA LA INSTITUCION:
+   - Digitalizacion de un proceso que hoy es manual
+   - Registro historico de todos los eventos realizados
+   - Control de aforo y capacidad de auditorios
+   - Base para una futura integracion real al Campus Virtual UNP
+
+
+================================================================================
+   Fin del documento
+================================================================================

@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { signIn, signUpAlumno, signUpDocente, detectarRolPorEmail } from '../lib/auth'
-import { supabase } from '../lib/supabase'
+import { getFacultades, getCarreras } from '../lib/db'
+import { useAuth } from '../lib/AuthContext'
 import {
   Eye, EyeOff, UserCircle, Monitor, GraduationCap, BookOpen,
   Users, Globe, FileText, Award, Search, Building2, BookMarked, Heart,
@@ -311,12 +312,12 @@ function RegisterForm({ mobile, onBack }: { mobile: boolean; onBack: () => void 
     : todasCarreras
 
   useEffect(() => {
-    supabase.from('facultades').select('id,nombre').order('nombre').then(({ data }) => {
-      if (data) setFacultades(data.map(f => ({ value: f.id, label: f.nombre })))
-    })
-    supabase.from('carreras').select('id,nombre,facultad_id').order('nombre').then(({ data }) => {
-      if (data) setTodasCarreras(data.map(c => ({ value: c.id, label: c.nombre, facultad_id: c.facultad_id })))
-    })
+    getFacultades()
+      .then(data => setFacultades(data.map(f => ({ value: f.id, label: f.nombre }))))
+      .catch(console.error)
+    getCarreras()
+      .then(data => setTodasCarreras(data.map(c => ({ value: c.id, label: c.nombre, facultad_id: c.facultad_id }))))
+      .catch(console.error)
   }, [])
 
   // Resetear carrera al cambiar facultad
@@ -369,7 +370,7 @@ function RegisterForm({ mobile, onBack }: { mobile: boolean; onBack: () => void 
       </div>
       <p style={{ color: mobile ? '#fff' : '#1a237e', fontWeight: 700, fontSize: 16, margin: 0 }}>¡Registro exitoso!</p>
       <p style={{ color: mobile ? 'rgba(255,255,255,0.8)' : '#555', fontSize: 13, margin: 0 }}>
-        Revisa tu correo institucional para confirmar tu cuenta.
+        Tu cuenta fue creada correctamente. Inicia sesión para continuar.
       </p>
       <button onClick={onBack} style={{ background: '#1565c0', color: '#fff', border: 'none', borderRadius: mobile ? 14 : 8, padding: '12px 32px', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
         Ir al inicio de sesión
@@ -481,6 +482,7 @@ function RegisterForm({ mobile, onBack }: { mobile: boolean; onBack: () => void 
 /* ─── Login Form ─────────────────────────────────────────────────────────────── */
 function LoginForm({ mobile, onRegister }: { mobile: boolean; onRegister: () => void }) {
   const navigate = useNavigate()
+  const { refresh } = useAuth()
   const [email,      setEmail]      = useState('')
   const [contrasena, setContrasena] = useState('')
   const [loading,    setLoading]    = useState(false)
@@ -492,9 +494,10 @@ function LoginForm({ mobile, onRegister }: { mobile: boolean; onRegister: () => 
     setError(''); setLoading(true)
     try {
       await signIn(email, contrasena)
+      await refresh()            // sincroniza el contexto de sesión antes de navegar
       navigate('/dashboard')
-    } catch {
-      setError('Correo o contraseña incorrectos.')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Correo o contraseña incorrectos.')
     } finally {
       setLoading(false)
     }

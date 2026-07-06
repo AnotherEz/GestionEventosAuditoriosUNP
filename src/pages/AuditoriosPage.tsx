@@ -172,52 +172,60 @@ export default function AuditoriosPage() {
         </div>
       )}
 
-      {/* Modal form */}
+      {/* Modal form CORREGIDO */}
       <AnimatePresence>
         {showForm && (
           <>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            <motion.div 
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setShowForm(false)}
-              style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 100 }}
+              style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.6)', zIndex: 999, backdropFilter: 'blur(2px)' }}
             />
             <motion.div
-              initial={{ opacity: 0, scale: 0.96, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96 }}
+              // LA MAGIA: Forzamos el -50% desde Framer
+              initial={{ opacity: 0, scale: 0.95, x: '-50%', y: '-45%' }}
+              animate={{ opacity: 1, scale: 1, x: '-50%', y: '-50%' }}
+              exit={{ opacity: 0, scale: 0.95, x: '-50%', y: '-45%' }}
               style={{
-                position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
-                background: '#fff', borderRadius: 16, padding: 28, width: '90%', maxWidth: 520,
-                maxHeight: '90vh', overflowY: 'auto', zIndex: 101,
+                position: 'fixed', top: '50%', left: '50%',
+                background: '#fff', borderRadius: 16, padding: 32, width: '90%', maxWidth: 540,
+                maxHeight: '90vh', overflowY: 'auto', zIndex: 1000,
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                <h2 style={{ fontSize: 17, fontWeight: 700, color: '#1a237e', margin: 0 }}>
+                <h2 style={{ fontSize: 18, fontWeight: 700, color: '#1a237e', margin: 0 }}>
                   {form.id ? 'Editar Auditorio' : 'Nuevo Auditorio'}
                 </h2>
-                <button onClick={() => setShowForm(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#555' }}>
+                <button onClick={() => setShowForm(false)} style={{ background: '#f3f4f6', border: 'none', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#4b5563', transition: 'background 0.2s' }}>
                   <X size={20} />
                 </button>
               </div>
 
               {error && <div style={{ background: '#ffebee', color: '#c62828', padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 16 }}>{error}</div>}
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <Field label="Nombre *" value={form.nombre} onChange={v => setForm(f => ({ ...f, nombre: v }))} />
                 <Field label="Descripción" value={form.descripcion} onChange={v => setForm(f => ({ ...f, descripcion: v }))} multiline />
-                <Field label="Capacidad (personas) *" value={String(form.capacidad)} onChange={v => setForm(f => ({ ...f, capacidad: Number(v) }))} type="number" />
-                <Field label="Ubicación" value={form.ubicacion} onChange={v => setForm(f => ({ ...f, ubicacion: v }))} />
+                
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+                  <Field label="Capacidad (personas) *" value={String(form.capacidad)} onChange={v => setForm(f => ({ ...f, capacidad: Number(v) }))} type="number" />
+                  <Field label="Ubicación" value={form.ubicacion} onChange={v => setForm(f => ({ ...f, ubicacion: v }))} />
+                </div>
 
                 <div>
-                  <p style={{ fontSize: 13, color: '#555', marginBottom: 8, fontWeight: 600 }}>Equipamiento</p>
+                  <p style={{ fontSize: 13, color: '#374151', marginBottom: 8, fontWeight: 600 }}>Equipamiento</p>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                     {EQUIPAMIENTO_OPTIONS.map(eq => {
                       const sel = form.equipamiento.includes(eq)
                       return (
                         <button key={eq} onClick={() => toggleEquip(eq)} style={{
-                          padding: '5px 12px', borderRadius: 20, border: `1px solid ${sel ? '#1565c0' : '#e0e0e0'}`,
-                          background: sel ? '#e8f0fe' : '#fff', color: sel ? '#1565c0' : '#555',
+                          padding: '6px 14px', borderRadius: 20, border: `1px solid ${sel ? '#1565c0' : '#d1d5db'}`,
+                          background: sel ? '#e8f0fe' : '#fff', color: sel ? '#1565c0' : '#4b5563',
                           fontSize: 13, cursor: 'pointer', fontFamily: 'inherit',
-                          display: 'flex', alignItems: 'center', gap: 4,
+                          display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.2s'
                         }}>
-                          {sel && <Check size={12} />} {eq}
+                          {sel && <Check size={14} />} {eq}
                         </button>
                       )
                     })}
@@ -225,17 +233,18 @@ export default function AuditoriosPage() {
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: 10, marginTop: 24, justifyContent: 'flex-end' }}>
+              <div style={{ display: 'flex', gap: 12, marginTop: 28, justifyContent: 'flex-end' }}>
                 <button onClick={() => setShowForm(false)} style={{
-                  padding: '10px 18px', border: '1px solid #e0e0e0', borderRadius: 10,
-                  background: '#fff', cursor: 'pointer', fontSize: 14, fontFamily: 'inherit',
+                  padding: '10px 20px', border: '1px solid #e0e0e0', borderRadius: 10,
+                  background: '#fff', cursor: 'pointer', fontSize: 14, fontWeight: 500, fontFamily: 'inherit', color: '#555'
                 }}>Cancelar</button>
                 <button onClick={handleSave} disabled={saving} style={{
-                  padding: '10px 20px', border: 'none', borderRadius: 10,
+                  padding: '10px 24px', border: 'none', borderRadius: 10,
                   background: saving ? '#90caf9' : '#1565c0', color: '#fff',
                   cursor: saving ? 'not-allowed' : 'pointer', fontSize: 14, fontWeight: 600, fontFamily: 'inherit',
+                  transition: 'background 0.2s'
                 }}>
-                  {saving ? 'Guardando...' : 'Guardar'}
+                  {saving ? 'Guardando...' : 'Guardar Auditorio'}
                 </button>
               </div>
             </motion.div>
@@ -250,13 +259,13 @@ function Field({ label, value, onChange, multiline, type }: {
   label: string; value: string; onChange: (v: string) => void; multiline?: boolean; type?: string
 }) {
   const style: React.CSSProperties = {
-    width: '100%', padding: '10px 12px', border: '1px solid #e0e0e0', borderRadius: 8,
+    width: '100%', padding: '12px 14px', border: '1px solid #d1d5db', borderRadius: 10,
     fontSize: 14, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
-    resize: multiline ? 'vertical' : undefined,
+    resize: multiline ? 'vertical' : undefined, color: '#1f2937', transition: 'border-color 0.2s'
   }
   return (
     <div>
-      <label style={{ fontSize: 13, color: '#555', display: 'block', marginBottom: 4, fontWeight: 600 }}>{label}</label>
+      <label style={{ fontSize: 13, color: '#374151', display: 'block', marginBottom: 6, fontWeight: 600 }}>{label}</label>
       {multiline
         ? <textarea rows={3} value={value} onChange={e => onChange(e.target.value)} style={style} />
         : <input type={type ?? 'text'} value={value} onChange={e => onChange(e.target.value)} style={style} />

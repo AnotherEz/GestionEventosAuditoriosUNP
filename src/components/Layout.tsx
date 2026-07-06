@@ -43,7 +43,7 @@ interface LayoutProps {
 }
 
 export default function Layout({ children, title, subtitle, pendingSolicitudes = 0 }: LayoutProps) {
-  const { user } = useAuth()
+  const { user, refresh } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -54,6 +54,7 @@ export default function Layout({ children, title, subtitle, pendingSolicitudes =
 
   const handleSignOut = async () => {
     await signOut()
+    await refresh()          // limpia el usuario del contexto antes de redirigir
     navigate('/')
   }
 

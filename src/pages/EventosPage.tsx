@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   CalendarDays, Plus, Edit2, Trash2, X, Users, Eye,
-  CheckCircle, Clock, PlayCircle, ArchiveX,
+  CheckCircle, Clock, PlayCircle, ArchiveX, RefreshCw
 } from 'lucide-react'
 import { useAuth } from '../lib/AuthContext'
 import Layout from '../components/Layout'
@@ -28,8 +28,8 @@ function EstadoBadge({ estado }: { estado: string }) {
   const cfg = ESTADO_CFG[estado] ?? ESTADO_CFG.borrador
   const Icon = cfg.icon
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', borderRadius: 10, background: cfg.bg, color: cfg.color, fontSize: 12, fontWeight: 600 }}>
-      <Icon size={11} /> {cfg.label}
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 12, background: cfg.bg, color: cfg.color, fontSize: 12, fontWeight: 600 }}>
+      <Icon size={12} /> {cfg.label}
     </span>
   )
 }
@@ -56,7 +56,7 @@ const EMPTY_FORM: FormData = {
 // ── Asistentes modal ────────────────────────────────────────────────────────
 
 function AsistentesModal({ eventoId, titulo, onClose }: { eventoId: string; titulo: string; onClose: () => void }) {
-  const [asistentes, setAsistentes] = useState<{ usuarios: { nombres: string; apellidos: string; email: string; rol: string } | null }[]>([])
+  const [asistentes, setAsistentes] = useState<{ nombres: string; apellidos: string; email: string; rol: string }[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -67,52 +67,47 @@ function AsistentesModal({ eventoId, titulo, onClose }: { eventoId: string; titu
   }, [eventoId])
 
   return (
-    <>
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 100 }} />
+    <div style={modalBackdropStyle} onClick={onClose}>
       <motion.div
-        initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }}
-        style={{
-          position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
-          background: '#fff', borderRadius: 16, padding: 28, width: '90%', maxWidth: 520,
-          maxHeight: '80vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', zIndex: 101,
-        }}
+        initial={{ opacity: 0, scale: 0.95, y: 15 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 15 }}
+        onClick={e => e.stopPropagation()} // Evita que el clic en el modal cierre el fondo
+        style={modalContainerStyle}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <div>
-            <h2 style={{ fontSize: 16, fontWeight: 700, color: '#1a237e', margin: 0 }}>Asistentes</h2>
-            <p style={{ fontSize: 12, color: '#9e9e9e', margin: 0 }}>{titulo}</p>
+            <h2 style={{ fontSize: 17, fontWeight: 700, color: '#1a237e', margin: 0 }}>Asistentes</h2>
+            <p style={{ fontSize: 13, color: '#9e9e9e', margin: 0 }}>{titulo}</p>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={20} /></button>
+          <button onClick={onClose} style={closeBtnStyle}><X size={20} /></button>
         </div>
 
         {loading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: 32 }}>
-            <span style={{ width: 28, height: 28, border: '2px solid #e0e0e0', borderTopColor: '#1565c0', borderRadius: '50%', animation: 'spin 0.7s linear infinite', display: 'block' }} />
+            <span style={spinnerStyle} />
             <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
           </div>
         ) : asistentes.length === 0 ? (
           <p style={{ textAlign: 'center', color: '#bdbdbd', padding: 32 }}>Sin asistentes inscritos</p>
         ) : (
-          <div style={{ overflowY: 'auto', flex: 1 }}>
+          <div style={{ overflowY: 'auto', flex: 1, paddingRight: 8 }}>
             <p style={{ fontSize: 13, color: '#555', marginBottom: 12 }}>{asistentes.length} inscritos</p>
             {asistentes.map((a, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid #f5f5f5' }}>
-                <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#e3f2fd', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1565c0', fontSize: 13, fontWeight: 700 }}>
-                  {(a.usuarios?.nombres?.[0] ?? '?').toUpperCase()}
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid #f5f5f5' }}>
+                <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#e3f2fd', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1565c0', fontSize: 14, fontWeight: 700 }}>
+                  {(a.nombres?.[0] ?? '?').toUpperCase()}
                 </div>
                 <div>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: '#212121', margin: 0 }}>
-                    {a.usuarios ? `${a.usuarios.nombres} ${a.usuarios.apellidos}` : 'Usuario'}
+                  <p style={{ fontSize: 14, fontWeight: 600, color: '#212121', margin: 0 }}>
+                    {`${a.nombres} ${a.apellidos}`}
                   </p>
-                  <p style={{ fontSize: 12, color: '#9e9e9e', margin: 0 }}>{a.usuarios?.email}</p>
+                  <p style={{ fontSize: 12, color: '#757575', margin: 0 }}>{a.email}</p>
                 </div>
               </div>
             ))}
           </div>
         )}
       </motion.div>
-    </>
+    </div>
   )
 }
 
@@ -133,10 +128,27 @@ function EventoForm({ initial, organizadorId, auditorios, categorias, onSave, on
   const f = <K extends keyof FormData>(k: K) => (v: FormData[K]) => setForm(p => ({ ...p, [k]: v }))
 
   const handleSave = async () => {
+    setError('')
+    
+    // Validaciones de UX mejoradas
     if (!form.titulo.trim() || !form.auditorio_id || !form.fecha_inicio || !form.fecha_fin) {
-      setError('Completa los campos obligatorios: título, auditorio y fechas')
+      setError('Por favor completa los campos obligatorios: título, auditorio y fechas.')
       return
     }
+
+    const inicio = new Date(form.fecha_inicio)
+    const fin = new Date(form.fecha_fin)
+    
+    if (fin <= inicio) {
+      setError('La fecha de fin debe ser posterior a la fecha de inicio.')
+      return
+    }
+
+    if (form.cupo_maximo < 1) {
+      setError('El cupo máximo debe ser de al menos 1 persona.')
+      return
+    }
+
     setSaving(true)
     try {
       await upsertEvento({
@@ -145,8 +157,8 @@ function EventoForm({ initial, organizadorId, auditorios, categorias, onSave, on
         descripcion: form.descripcion || undefined,
         auditorio_id: form.auditorio_id,
         categoria_id: form.categoria_id || undefined,
-        fecha_inicio: new Date(form.fecha_inicio).toISOString(),
-        fecha_fin: new Date(form.fecha_fin).toISOString(),
+        fecha_inicio: inicio.toISOString(),
+        fecha_fin: fin.toISOString(),
         cupo_maximo: Number(form.cupo_maximo),
         ponente: form.ponente || undefined,
         estado: form.estado,
@@ -154,43 +166,45 @@ function EventoForm({ initial, organizadorId, auditorios, categorias, onSave, on
       })
       onSave()
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Error al guardar')
+      setError(e instanceof Error ? e.message : 'Error al guardar el evento')
     } finally {
       setSaving(false)
     }
   }
 
   return (
-    <>
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 100 }} />
+    <div style={modalBackdropStyle} onClick={onClose}>
       <motion.div
-        initial={{ opacity: 0, scale: 0.96, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96 }}
-        style={{
-          position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
-          background: '#fff', borderRadius: 16, padding: 28, width: '90%', maxWidth: 560,
-          maxHeight: '90vh', overflowY: 'auto', zIndex: 101,
-        }}
+        initial={{ opacity: 0, scale: 0.95, y: 15 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 15 }}
+        onClick={e => e.stopPropagation()} // Previene el cierre accidental
+        style={modalContainerStyle}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <h2 style={{ fontSize: 17, fontWeight: 700, color: '#1a237e', margin: 0 }}>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: '#1a237e', margin: 0 }}>
             {form.id ? 'Editar Evento' : 'Nuevo Evento'}
           </h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={20} /></button>
+          <button onClick={onClose} style={closeBtnStyle}><X size={20} /></button>
         </div>
 
-        {error && <div style={{ background: '#ffebee', color: '#c62828', padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 16 }}>{error}</div>}
+        <AnimatePresence>
+          {error && (
+            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, height: 0 }}
+              style={{ background: '#ffebee', color: '#c62828', padding: '12px 16px', borderRadius: 8, fontSize: 13, marginBottom: 16, fontWeight: 500 }}>
+              {error}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <FField label="Título *" value={form.titulo} onChange={f('titulo')} />
           <FField label="Descripción" value={form.descripcion} onChange={f('descripcion')} multiline />
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
             <div>
               <label style={labelStyle}>Auditorio *</label>
               <select value={form.auditorio_id} onChange={e => f('auditorio_id')(e.target.value)} style={selectStyle}>
                 <option value="">Seleccionar...</option>
-                {auditorios.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+                {auditorios.map(a => <option key={a.id} value={a.id}>{a.nombre} (Cap: {a.capacidad})</option>)}
               </select>
             </div>
             <div>
@@ -202,56 +216,72 @@ function EventoForm({ initial, organizadorId, auditorios, categorias, onSave, on
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
             <FField label="Fecha inicio *" value={form.fecha_inicio} onChange={f('fecha_inicio')} type="datetime-local" />
             <FField label="Fecha fin *" value={form.fecha_fin} onChange={f('fecha_fin')} type="datetime-local" />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <FField label="Cupo máximo" value={String(form.cupo_maximo)} onChange={v => f('cupo_maximo')(Number(v) as unknown as FormData['cupo_maximo'])} type="number" />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+            <FField label="Cupo máximo *" value={String(form.cupo_maximo)} onChange={v => f('cupo_maximo')(Number(v) as unknown as FormData['cupo_maximo'])} type="number" />
             <FField label="Ponente" value={form.ponente} onChange={f('ponente')} />
           </div>
 
           <div>
-            <label style={labelStyle}>Estado</label>
+            <label style={labelStyle}>Estado actual</label>
             <select value={form.estado} onChange={e => f('estado')(e.target.value as Evento['estado'])} style={selectStyle}>
-              {Object.entries(ESTADO_CFG).filter(([k]) => k !== 'cancelado').map(([k, v]) => (
+              {Object.entries(ESTADO_CFG).map(([k, v]) => (
                 <option key={k} value={k}>{v.label}</option>
               ))}
             </select>
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 10, marginTop: 24, justifyContent: 'flex-end' }}>
-          <button onClick={onClose} style={{ padding: '10px 18px', border: '1px solid #e0e0e0', borderRadius: 10, background: '#fff', cursor: 'pointer', fontSize: 14, fontFamily: 'inherit' }}>
+        <div style={{ display: 'flex', gap: 12, marginTop: 28, justifyContent: 'flex-end' }}>
+          <button onClick={onClose} style={{ padding: '10px 20px', border: '1px solid #e0e0e0', borderRadius: 10, background: '#fff', cursor: 'pointer', fontSize: 14, fontWeight: 500, fontFamily: 'inherit', color: '#555' }}>
             Cancelar
           </button>
           <button onClick={handleSave} disabled={saving} style={{
-            padding: '10px 20px', border: 'none', borderRadius: 10,
+            padding: '10px 24px', border: 'none', borderRadius: 10,
             background: saving ? '#90caf9' : '#1565c0', color: '#fff',
             cursor: saving ? 'not-allowed' : 'pointer', fontSize: 14, fontWeight: 600, fontFamily: 'inherit',
+            transition: 'background 0.2s'
           }}>
-            {saving ? 'Guardando...' : 'Guardar'}
+            {saving ? 'Guardando...' : 'Guardar Evento'}
           </button>
         </div>
       </motion.div>
-    </>
+    </div>
   )
 }
 
-const labelStyle: React.CSSProperties = { fontSize: 13, fontWeight: 600, color: '#555', display: 'block', marginBottom: 4 }
-const selectStyle: React.CSSProperties = { width: '100%', padding: '10px 12px', border: '1px solid #e0e0e0', borderRadius: 8, fontSize: 14, fontFamily: 'inherit' }
+// ── Estilos Centralizados de UI ──────────────────────────────────────────────
+
+const modalBackdropStyle: React.CSSProperties = {
+  position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.6)', 
+  zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', 
+  padding: '20px', backdropFilter: 'blur(3px)'
+}
+
+const modalContainerStyle: React.CSSProperties = {
+  background: '#fff', borderRadius: 16, padding: '32px', width: '100%', 
+  maxWidth: 600, maxHeight: '90vh', overflowY: 'auto', 
+  boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+}
+
+const labelStyle: React.CSSProperties = { fontSize: 13, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 6 }
+const selectStyle: React.CSSProperties = { width: '100%', padding: '12px 14px', border: '1px solid #d1d5db', borderRadius: 10, fontSize: 14, fontFamily: 'inherit', color: '#1f2937', transition: 'border-color 0.2s', outline: 'none' }
+const closeBtnStyle: React.CSSProperties = { background: '#f3f4f6', border: 'none', borderRadius: '50%', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#4b5563', transition: 'background 0.2s' }
+const spinnerStyle: React.CSSProperties = { width: 32, height: 32, border: '3px solid #e0e0e0', borderTopColor: '#1565c0', borderRadius: '50%', animation: 'spin 0.7s linear infinite', display: 'block' }
 
 function FField({ label, value, onChange, multiline, type }: {
   label: string; value: string; onChange: (v: string) => void; multiline?: boolean; type?: string
 }) {
-  const s: React.CSSProperties = { width: '100%', padding: '10px 12px', border: '1px solid #e0e0e0', borderRadius: 8, fontSize: 14, fontFamily: 'inherit', boxSizing: 'border-box', resize: multiline ? 'vertical' : undefined }
   return (
     <div>
       <label style={labelStyle}>{label}</label>
       {multiline
-        ? <textarea rows={3} value={value} onChange={e => onChange(e.target.value)} style={s} />
-        : <input type={type ?? 'text'} value={value} onChange={e => onChange(e.target.value)} style={s} />
+        ? <textarea rows={3} value={value} onChange={e => onChange(e.target.value)} style={{...selectStyle, resize: 'vertical'}} />
+        : <input type={type ?? 'text'} value={value} onChange={e => onChange(e.target.value)} style={selectStyle} />
       }
     </div>
   )
@@ -290,7 +320,7 @@ export default function EventosPage() {
   useEffect(() => { if (user) load() }, [user])
 
   const handleDelete = async (id: string) => {
-    if (!confirm('¿Cancelar este evento?')) return
+    if (!confirm('¿Estás seguro de que deseas cancelar este evento? Esta acción es irreversible desde aquí.')) return
     await deleteEvento(id)
     load()
   }
@@ -329,14 +359,15 @@ export default function EventosPage() {
   return (
     <Layout title={isAdmin ? 'Gestión de Eventos' : 'Mis Eventos'}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {['todos', 'borrador', 'publicado', 'en_curso', 'finalizado'].map(s => (
+          {['todos', 'borrador', 'publicado', 'en_curso', 'finalizado', 'cancelado'].map(s => (
             <button key={s} onClick={() => setFiltroEstado(s)} style={{
-              padding: '6px 14px', borderRadius: 20, border: `1px solid ${filtroEstado === s ? '#1565c0' : '#e0e0e0'}`,
+              padding: '8px 16px', borderRadius: 20, border: `1px solid ${filtroEstado === s ? '#1565c0' : '#e5e7eb'}`,
               background: filtroEstado === s ? '#e8f0fe' : '#fff',
-              color: filtroEstado === s ? '#1565c0' : '#555',
-              fontSize: 12, fontWeight: filtroEstado === s ? 600 : 400, cursor: 'pointer', fontFamily: 'inherit', textTransform: 'capitalize',
+              color: filtroEstado === s ? '#1565c0' : '#4b5563',
+              fontSize: 13, fontWeight: filtroEstado === s ? 600 : 500, cursor: 'pointer', fontFamily: 'inherit', textTransform: 'capitalize',
+              transition: 'all 0.2s'
             }}>
               {s === 'todos' ? 'Todos' : ESTADO_CFG[s]?.label ?? s}
             </button>
@@ -344,66 +375,80 @@ export default function EventosPage() {
         </div>
         <button onClick={openCreate} style={{
           display: 'flex', alignItems: 'center', gap: 8, background: '#1565c0', color: '#fff',
-          border: 'none', borderRadius: 10, padding: '10px 18px', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+          border: 'none', borderRadius: 10, padding: '12px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+          boxShadow: '0 4px 6px -1px rgba(21, 101, 192, 0.2)'
         }}>
-          <Plus size={17} /> Nuevo Evento
+          <Plus size={18} /> Nuevo Evento
         </button>
       </div>
 
       {loading ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: 60 }}>
-          <span style={{ width: 32, height: 32, border: '3px solid #e0e0e0', borderTopColor: '#1565c0', borderRadius: '50%', animation: 'spin 0.7s linear infinite', display: 'block' }} />
-          <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+          <span style={spinnerStyle} />
         </div>
       ) : filtrados.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: 60, color: '#bdbdbd' }}>
-          <CalendarDays size={48} />
-          <p style={{ marginTop: 12 }}>No hay eventos en esta categoría</p>
+        <div style={{ textAlign: 'center', padding: 60, color: '#9ca3af' }}>
+          <CalendarDays size={56} style={{ marginBottom: 16, opacity: 0.5 }} />
+          <p style={{ fontSize: 15, fontWeight: 500 }}>No hay eventos en esta categoría</p>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {filtrados.map((e, i) => (
             <motion.div key={e.id}
               initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-              style={{ background: '#fff', borderRadius: 12, border: '1px solid #e8eaed', padding: '16px 20px' }}
+              style={{ background: '#fff', borderRadius: 16, border: '1px solid #e5e7eb', padding: '20px 24px', boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.05)' }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6, flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10, flexWrap: 'wrap' }}>
                     {e.categoria_color && (
-                      <span style={{ width: 10, height: 10, borderRadius: '50%', background: e.categoria_color, flexShrink: 0 }} />
+                      <span style={{ width: 12, height: 12, borderRadius: '50%', background: e.categoria_color, flexShrink: 0 }} />
                     )}
-                    <h3 style={{ fontSize: 15, fontWeight: 700, color: '#1a237e', margin: 0 }}>{e.titulo}</h3>
+                    <h3 style={{ fontSize: 17, fontWeight: 700, color: '#1e1b4b', margin: 0 }}>{e.titulo}</h3>
                     <EstadoBadge estado={e.estado} />
                   </div>
-                  <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 13, color: '#555' }}>
+                  <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', fontSize: 14, color: '#4b5563', lineHeight: 1.6 }}>
                     <span>📍 {e.auditorio_nombre}</span>
                     <span>📅 {fmtFecha(e.fecha_inicio)}</span>
-                    <span><Users size={13} style={{ verticalAlign: 'middle' }} /> {e.cupos_reservados}/{e.cupo_maximo}</span>
+                    <span><Users size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} /> {e.cupos_reservados}/{e.cupo_maximo}</span>
                     {e.ponente && <span>🎤 {e.ponente}</span>}
                     {isAdmin && e.organizador_nombre && <span>👤 {e.organizador_nombre}</span>}
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: 8, flexShrink: 0, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: 10, flexShrink: 0, flexWrap: 'wrap', alignItems: 'center' }}>
+                  
+                  {/* Flujo de Estados Intuitivo */}
                   {e.estado === 'borrador' && (
                     <ActionBtn label="Publicar" color="#2e7d32" onClick={() => handleEstado(e.id, 'publicado')} />
                   )}
                   {e.estado === 'publicado' && (
-                    <ActionBtn label="En curso" color="#1565c0" onClick={() => handleEstado(e.id, 'en_curso')} />
+                    <ActionBtn label="Comenzar" color="#1565c0" onClick={() => handleEstado(e.id, 'en_curso')} />
                   )}
                   {e.estado === 'en_curso' && (
                     <ActionBtn label="Finalizar" color="#757575" onClick={() => handleEstado(e.id, 'finalizado')} />
                   )}
-                  <button onClick={() => setViewAsistentes({ id: e.id, titulo: e.titulo })}
-                    style={{ ...btnStyle, color: '#555', borderColor: '#e0e0e0' }}>
-                    <Eye size={14} />
+                  
+                  {/* Rutas de escape para errores (Reversiones) */}
+                  {e.estado === 'finalizado' && (
+                    <ActionBtn label="Reabrir" color="#e65100" icon={<RefreshCw size={14} />} onClick={() => handleEstado(e.id, 'publicado')} />
+                  )}
+                  {e.estado === 'cancelado' && (
+                    <ActionBtn label="Restaurar" color="#6a1b9a" icon={<RefreshCw size={14} />} onClick={() => handleEstado(e.id, 'borrador')} />
+                  )}
+
+                  <div style={{ width: 1, height: 24, background: '#e5e7eb', margin: '0 4px' }} />
+
+                  <button onClick={() => setViewAsistentes({ id: e.id, titulo: e.titulo })} title="Ver Asistentes" style={{ ...btnStyle, color: '#4b5563', borderColor: '#d1d5db' }}>
+                    <Eye size={16} />
                   </button>
-                  <button onClick={() => openEdit(e)} style={{ ...btnStyle, color: '#1565c0', borderColor: '#bbdefb' }}>
-                    <Edit2 size={14} />
+                  <button onClick={() => openEdit(e)} title="Editar" style={{ ...btnStyle, color: '#1565c0', borderColor: '#bfdbfe', background: '#eff6ff' }}>
+                    <Edit2 size={16} />
                   </button>
-                  {(isAdmin || e.estado === 'borrador') && (
-                    <button onClick={() => handleDelete(e.id)} style={{ ...btnStyle, color: '#d32f2f', borderColor: '#ffcdd2' }}>
-                      <Trash2 size={14} />
+                  
+                  {/* El botón de eliminar (cancelar) ahora tiene sentido y valida si no está ya cancelado */}
+                  {(isAdmin || e.estado === 'borrador') && e.estado !== 'cancelado' && (
+                    <button onClick={() => handleDelete(e.id)} title="Cancelar Evento" style={{ ...btnStyle, color: '#dc2626', borderColor: '#fecaca', background: '#fef2f2' }}>
+                      <Trash2 size={16} />
                     </button>
                   )}
                 </div>
@@ -438,17 +483,19 @@ export default function EventosPage() {
 }
 
 const btnStyle: React.CSSProperties = {
-  padding: '6px 10px', border: '1px solid #e0e0e0', borderRadius: 8, background: '#fff',
-  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontFamily: 'inherit',
+  padding: '8px', border: '1px solid #e0e0e0', borderRadius: 10, background: '#fff',
+  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+  transition: 'all 0.2s', outline: 'none'
 }
 
-function ActionBtn({ label, color, onClick }: { label: string; color: string; onClick: () => void }) {
+function ActionBtn({ label, color, icon, onClick }: { label: string; color: string; icon?: React.ReactNode; onClick: () => void }) {
   return (
     <button onClick={onClick} style={{
-      padding: '6px 12px', border: `1px solid ${color}`, borderRadius: 8,
+      padding: '8px 14px', border: `1.5px solid ${color}`, borderRadius: 10,
       background: '#fff', color, cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit',
+      display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.2s'
     }}>
-      {label}
+      {icon} {label}
     </button>
   )
 }
