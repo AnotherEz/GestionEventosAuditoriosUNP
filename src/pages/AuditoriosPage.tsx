@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Building2, Plus, Edit2, ToggleLeft, ToggleRight, X, Check, Users } from 'lucide-react'
+import { Building2, Plus, Edit2, ToggleLeft, ToggleRight, X, Check, Users, ChevronRight } from 'lucide-react'
 import { useAuth } from '../lib/AuthContext'
 import Layout from '../components/Layout'
 import { getAuditorios, upsertAuditorio, toggleAuditorio } from '../lib/db'
@@ -31,6 +32,7 @@ const EMPTY_FORM: FormData = { nombre: '', descripcion: '', capacidad: 0, ubicac
 
 export default function AuditoriosPage() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const isAdmin = user?.rol === 'admin'
 
   const [auditorios, setAuditorios] = useState<Auditorio[]>([])
@@ -116,9 +118,11 @@ export default function AuditoriosPage() {
           {auditorios.map((a, i) => (
             <motion.div key={a.id}
               initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+              whileHover={{ y: -3, boxShadow: '0 8px 24px rgba(21,101,192,0.12)' }}
+              onClick={() => navigate(`/auditorios/${a.id}`)}
               style={{
                 background: '#fff', borderRadius: 14, border: '1px solid #e8eaed',
-                overflow: 'hidden', opacity: a.activo ? 1 : 0.6,
+                overflow: 'hidden', opacity: a.activo ? 1 : 0.6, cursor: 'pointer',
               }}
             >
               {/* Card header */}
@@ -146,17 +150,28 @@ export default function AuditoriosPage() {
                 </div>
               )}
 
+              {/* Tarifas + ver detalles */}
+              <div style={{ padding: '10px 18px', borderTop: '1px solid #f5f5f5', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 12, color: '#757575' }}>
+                  Interno <strong style={{ color: '#1565c0' }}>S/ {a.precio_interno.toFixed(0)}</strong>
+                  {' · '}Externo <strong style={{ color: '#e65100' }}>S/ {a.precio_externo.toFixed(0)}</strong>
+                </span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, fontSize: 12, fontWeight: 600, color: '#1565c0' }}>
+                  Ver detalles <ChevronRight size={13} />
+                </span>
+              </div>
+
               {/* Actions */}
               {isAdmin && (
                 <div style={{ padding: '10px 18px', borderTop: '1px solid #f5f5f5', display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                  <button onClick={() => openEdit(a)} style={{
+                  <button onClick={e => { e.stopPropagation(); openEdit(a) }} style={{
                     display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px',
                     border: '1px solid #e8eaed', borderRadius: 8, background: '#fff',
                     cursor: 'pointer', fontSize: 13, color: '#555', fontFamily: 'inherit',
                   }}>
                     <Edit2 size={14} /> Editar
                   </button>
-                  <button onClick={() => handleToggle(a)} style={{
+                  <button onClick={e => { e.stopPropagation(); handleToggle(a) }} style={{
                     display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px',
                     border: `1px solid ${a.activo ? '#d32f2f' : '#2e7d32'}`,
                     borderRadius: 8, background: '#fff',

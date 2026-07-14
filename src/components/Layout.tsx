@@ -1,13 +1,14 @@
 import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import {
   LayoutDashboard, CalendarDays, Building2, ClipboardList,
   Users, TicketCheck, PlusCircle, LogOut, Bell, Menu, X,
-  ChevronRight,
+  ChevronRight, KeyRound,
 } from 'lucide-react'
 import { useAuth } from '../lib/AuthContext'
 import { signOut } from '../lib/auth'
+import { CambiarPasswordModal } from './CambiarPassword'
 import unpShield from '../assets/unp-shield.png'
 
 interface NavItem {
@@ -15,17 +16,17 @@ interface NavItem {
   icon: React.ElementType
   path: string
   badge?: number
-  roles: ('admin' | 'docente' | 'alumno')[]
+  roles: ('admin' | 'docente' | 'alumno' | 'externo')[]
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Dashboard',         icon: LayoutDashboard, path: '/dashboard',         roles: ['admin', 'docente', 'alumno'] },
+  { label: 'Dashboard',         icon: LayoutDashboard, path: '/dashboard',         roles: ['admin', 'docente', 'alumno', 'externo'] },
   { label: 'Eventos',           icon: CalendarDays,    path: '/eventos',            roles: ['admin', 'docente'] },
-  { label: 'Catálogo de Eventos', icon: CalendarDays,  path: '/catalogo',           roles: ['alumno'] },
-  { label: 'Auditorios',        icon: Building2,       path: '/auditorios',         roles: ['admin', 'docente'] },
-  { label: 'Solicitudes',       icon: ClipboardList,   path: '/solicitudes',        roles: ['admin', 'docente'] },
-  { label: 'Mis Reservas',      icon: TicketCheck,     path: '/mis-reservas',       roles: ['alumno', 'docente'] },
-  { label: 'Nueva Solicitud',   icon: PlusCircle,      path: '/nueva-solicitud',    roles: ['docente'] },
+  { label: 'Catálogo de Eventos', icon: CalendarDays,  path: '/catalogo',           roles: ['alumno', 'externo'] },
+  { label: 'Auditorios',        icon: Building2,       path: '/auditorios',         roles: ['admin', 'docente', 'alumno', 'externo'] },
+  { label: 'Solicitudes',       icon: ClipboardList,   path: '/solicitudes',        roles: ['admin', 'docente', 'alumno', 'externo'] },
+  { label: 'Mis Reservas',      icon: TicketCheck,     path: '/mis-reservas',       roles: ['alumno', 'docente', 'externo'] },
+  { label: 'Nueva Solicitud',   icon: PlusCircle,      path: '/nueva-solicitud',    roles: ['docente', 'alumno', 'externo'] },
   { label: 'Usuarios',          icon: Users,           path: '/usuarios',           roles: ['admin'] },
 ]
 
@@ -33,6 +34,7 @@ const ROL_LABEL: Record<string, string> = {
   admin: 'Administrador',
   docente: 'Docente',
   alumno: 'Alumno',
+  externo: 'Usuario Externo',
 }
 
 interface LayoutProps {
@@ -47,6 +49,7 @@ export default function Layout({ children, title, subtitle, pendingSolicitudes =
   const navigate = useNavigate()
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [pwdModalOpen, setPwdModalOpen] = useState(false)
 
   const rol = user?.rol ?? 'alumno'
   const visibleNav = NAV_ITEMS.filter(n => n.roles.includes(rol))
@@ -122,8 +125,21 @@ export default function Layout({ children, title, subtitle, pendingSolicitudes =
         })}
       </nav>
 
-      {/* Sign out */}
+      {/* Mi cuenta + Sign out */}
       <div style={{ padding: '10px 10px', borderTop: '1px solid #e8eaed' }}>
+        <button
+          onClick={() => { setPwdModalOpen(true); setSidebarOpen(false) }}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 10,
+            padding: '9px 12px', borderRadius: 8, border: 'none', cursor: 'pointer',
+            background: 'transparent', color: '#555',
+            fontSize: 14, fontFamily: 'inherit', width: '100%', textAlign: 'left',
+          }}
+          onMouseEnter={e => (e.currentTarget.style.background = '#f5f5f5')}
+          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+        >
+          <KeyRound size={17} /> Cambiar contraseña
+        </button>
         <button onClick={handleSignOut} style={{
           display: 'flex', alignItems: 'center', gap: 10,
           padding: '9px 12px', borderRadius: 8, border: 'none', cursor: 'pointer',
@@ -151,30 +167,30 @@ export default function Layout({ children, title, subtitle, pendingSolicitudes =
         <SidebarContent />
       </motion.aside>
 
-      {/* Mobile sidebar overlay */}
-      <AnimatePresence>
-        {sidebarOpen && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={() => setSidebarOpen(false)}
-              style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 40 }}
-            />
-            <motion.aside
-              initial={{ x: -240 }} animate={{ x: 0 }} exit={{ x: -240 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-              style={{ position: 'fixed', top: 0, left: 0, bottom: 0, width: 260, background: '#fff', zIndex: 50, display: 'flex', flexDirection: 'column' }}
-            >
-              <button onClick={() => setSidebarOpen(false)} style={{
-                position: 'absolute', top: 12, right: 12, background: 'none', border: 'none', cursor: 'pointer', color: '#555',
-              }}>
-                <X size={20} />
-              </button>
-              <SidebarContent />
-            </motion.aside>
-          </>
-        )}
-      </AnimatePresence>
+      {/* Mobile sidebar overlay. Sin AnimatePresence: con framer-motion 12 +
+          React 19 los fragmentos no se desmontan tras el exit y el overlay
+          invisible queda bloqueando los toques en móvil. */}
+      {sidebarOpen && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+            onClick={() => setSidebarOpen(false)}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 40 }}
+          />
+          <motion.aside
+            initial={{ x: -240 }} animate={{ x: 0 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            style={{ position: 'fixed', top: 0, left: 0, bottom: 0, width: 260, background: '#fff', zIndex: 50, display: 'flex', flexDirection: 'column' }}
+          >
+            <button onClick={() => setSidebarOpen(false)} style={{
+              position: 'absolute', top: 12, right: 12, background: 'none', border: 'none', cursor: 'pointer', color: '#555',
+            }}>
+              <X size={20} />
+            </button>
+            <SidebarContent />
+          </motion.aside>
+        </>
+      )}
 
       {/* Main */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
@@ -221,6 +237,9 @@ export default function Layout({ children, title, subtitle, pendingSolicitudes =
           </motion.div>
         </main>
       </div>
+
+      {/* Modal de cambio de contraseña voluntario (Mi cuenta) */}
+      <CambiarPasswordModal open={pwdModalOpen} onClose={() => setPwdModalOpen(false)} />
 
       <style>{`
         @media (max-width: 768px) {

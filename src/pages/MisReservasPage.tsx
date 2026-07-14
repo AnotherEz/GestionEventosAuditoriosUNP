@@ -1,6 +1,6 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Ticket, X, Download, CalendarDays, MapPin, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { Ticket, X, Download, CalendarDays, MapPin, AlertCircle } from 'lucide-react'
 import QRCode from 'react-qr-code'
 import html2canvas from 'html2canvas'
 import { useAuth } from '../lib/AuthContext'

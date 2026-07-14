@@ -1,4 +1,4 @@
-export type Rol = 'admin' | 'docente' | 'alumno'
+export type Rol = 'admin' | 'docente' | 'alumno' | 'externo'
 
 export interface Usuario {
   id: string
@@ -11,10 +11,17 @@ export interface Usuario {
   dni?: string
   facultad_id?: string
   telefono?: string
+  institucion?: string
+  ruc?: string
+  direccion?: string
   activo: boolean
+  /** true = cuenta creada/reseteada por el admin (contraseña = DNI): debe cambiarla al entrar */
+  debe_cambiar_password?: boolean
   avatar_url?: string
   created_at: string
 }
+
+export type ReglaCobro = 'por_tiempo' | 'plana_dia' | 'plana_evento'
 
 export interface Auditorio {
   id: string
@@ -24,8 +31,23 @@ export interface Auditorio {
   ubicacion?: string
   facultad_id?: string
   equipamiento?: string[]
+  precio_interno: number
+  precio_externo: number
+  regla_cobro: ReglaCobro
   foto_url?: string
   activo: boolean
+}
+
+export interface BloqueOcupado {
+  fecha_inicio: string
+  fecha_fin: string
+  estado: 'pendiente' | 'confirmado'
+  titulo?: string
+}
+
+export interface DisponibilidadSemana {
+  semana_inicio: string   // lunes de la semana (YYYY-MM-DD)
+  bloques: BloqueOcupado[]
 }
 
 export interface Evento {
@@ -59,6 +81,9 @@ export interface SolicitudReserva {
   fecha_inicio: string
   fecha_fin: string
   asistentes_est?: number
+  duracion?: 'completo' | 'medio'
+  tipo_evento?: 'academico' | 'pago'
+  monto?: number
   estado: 'pendiente' | 'aprobado' | 'rechazado'
   revisado_por?: string
   observaciones?: string
@@ -67,7 +92,11 @@ export interface SolicitudReserva {
 
 export interface SolicitudReservaExt extends SolicitudReserva {
   auditorio_nombre?: string
-  docente_nombre?: string
+  docente_nombre?: string          // nombre del solicitante (docente, alumno o externo)
+  solicitante_rol?: Rol
+  solicitante_institucion?: string
+  solicitante_dni?: string
+  solicitante_ruc?: string
 }
 
 export interface Reserva {

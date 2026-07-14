@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { signIn, signUpAlumno, signUpDocente, detectarRolPorEmail } from '../lib/auth'
+import { signIn, signUpAlumno, signUpDocente, signUpExterno, detectarRolPorEmail } from '../lib/auth'
 import { getFacultades, getCarreras } from '../lib/db'
 import { useAuth } from '../lib/AuthContext'
 import {
@@ -286,25 +286,32 @@ function ServicesGrid({ mobile = false }: { mobile?: boolean }) {
 
 /* ─── Register Form ──────────────────────────────────────────────────────────── */
 function RegisterForm({ mobile, onBack }: { mobile: boolean; onBack: () => void }) {
-  const [email,      setEmail]      = useState('')
-  const [nombres,    setNombres]    = useState('')
-  const [apellidos,  setApellidos]  = useState('')
-  const [password,   setPassword]   = useState('')
-  const [campo1,     setCampo1]     = useState('')   // código universitario (alumno) | DNI (docente)
-  const [telefono,   setTelefono]   = useState('')
-  const [facultadId, setFacultadId] = useState('')
-  const [carreraId,  setCarreraId]  = useState('')
-  const [loading,    setLoading]    = useState(false)
-  const [error,      setError]      = useState('')
-  const [success,    setSuccess]    = useState(false)
+  const [email,       setEmail]       = useState('')
+  const [nombres,     setNombres]     = useState('')
+  const [apellidos,   setApellidos]   = useState('')
+  const [password,    setPassword]    = useState('')
+  const [dni,         setDni]         = useState('')   // obligatorio para todos
+  const [codigo,      setCodigo]      = useState('')   // código universitario (alumno)
+  const [telefono,    setTelefono]    = useState('')
+  const [facultadId,  setFacultadId]  = useState('')
+  const [carreraId,   setCarreraId]   = useState('')
+  const [tipoExterno, setTipoExterno] = useState<'natural' | 'institucion'>('natural')
+  const [institucion, setInstitucion] = useState('')   // externo (solo institución/empresa)
+  const [ruc,         setRuc]         = useState('')   // externo (solo institución/empresa)
+  const [direccion,   setDireccion]   = useState('')   // externo (opcional)
+  const [loading,     setLoading]     = useState(false)
+  const [error,       setError]       = useState('')
+  const [success,     setSuccess]     = useState(false)
 
   // Catálogos
   const [facultades, setFacultades] = useState<{value:string;label:string}[]>([])
   const [todasCarreras, setTodasCarreras] = useState<{value:string;label:string;facultad_id:string}[]>([])
 
-  const rol       = detectarRolPorEmail(email)
-  const esAlumno  = rol === 'alumno'
-  const esDocente = rol === 'docente'
+  const rol        = detectarRolPorEmail(email)
+  const esAlumno   = rol === 'alumno'
+  const esDocente  = rol === 'docente'
+  const esExterno  = rol === 'externo'
+  const rolValido  = esAlumno || esDocente || esExterno
 
   // Carreras filtradas por la facultad elegida
   const carrerasFiltradas = facultadId
@@ -331,29 +338,43 @@ function RegisterForm({ mobile, onBack }: { mobile: boolean; onBack: () => void 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-    if (!rol) { setError('Correo no válido. Usa @alumnos.unp.edu.pe o @unp.edu.pe'); return }
+    if (!rol) { setError('Ingresa un correo electrónico válido.'); return }
     if (email === 'admin@unp.edu.pe') { setError('No puedes registrarte con ese correo.'); return }
-    if (!nombres.trim() || !apellidos.trim() || !password || !campo1.trim()) {
+    if (!nombres.trim() || !apellidos.trim() || !password) {
       setError('Completa todos los campos obligatorios.'); return
     }
+    if (password.length < 8) { setError('La contraseña debe tener al menos 8 caracteres.'); return }
+    if (!/^\d{8}$/.test(dni)) { setError('El DNI debe tener 8 dígitos.'); return }
     if (!validarTelefono(telefono)) {
       setError('El teléfono debe tener 9 dígitos y empezar con 9.'); return
     }
+    if (esAlumno && !codigo.trim()) { setError('Ingresa tu código universitario.'); return }
     if (esAlumno && !facultadId) { setError('Selecciona tu facultad.'); return }
     if (esAlumno && !carreraId)  { setError('Selecciona tu escuela/carrera.'); return }
+    const esInstitucion = esExterno && tipoExterno === 'institucion'
+    if (esInstitucion && !institucion.trim()) { setError('Ingresa el nombre de tu institución o empresa.'); return }
+    // Una institución/empresa se identifica con su RUC: es obligatorio
+    if (esInstitucion && !/^\d{11}$/.test(ruc)) { setError('El RUC es obligatorio para instituciones y debe tener 11 dígitos.'); return }
 
     setLoading(true)
     try {
       if (esAlumno) {
         await signUpAlumno({
-          email, password, nombres, apellidos,
-          codigo_universitario: campo1,
+          email, password, nombres, apellidos, dni,
+          codigo_universitario: codigo,
           carrera_id: carreraId,
           facultad_id: facultadId,
           telefono,
         })
+      } else if (esDocente) {
+        await signUpDocente({ email, password, nombres, apellidos, dni, telefono })
       } else {
-        await signUpDocente({ email, password, nombres, apellidos, dni: campo1, telefono })
+        await signUpExterno({
+          email, password, nombres, apellidos, dni, telefono,
+          institucion: esInstitucion ? institucion.trim() : undefined,
+          ruc: esInstitucion ? ruc : undefined,
+          direccion: direccion.trim() || undefined,
+        })
       }
       setSuccess(true)
     } catch (err: unknown) {
@@ -382,10 +403,15 @@ function RegisterForm({ mobile, onBack }: { mobile: boolean; onBack: () => void 
 
   return (
     <form onSubmit={handleSubmit} style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <FloatingInput id={`${p}-reg-email`} label="Correo institucional" value={email} onChange={setEmail} mobile={mobile} type="email" />
+      <FloatingInput id={`${p}-reg-email`} label="Correo electrónico" value={email} onChange={setEmail} mobile={mobile} type="email" />
+      {!rolValido && email.trim() === '' && (
+        <p style={{ fontSize: 11, color: mobile ? 'rgba(255,255,255,0.65)' : '#9e9e9e', margin: '-6px 0 0', textAlign:'center', lineHeight: 1.5 }}>
+          Comunidad UNP: usa tu correo institucional.<br/>Público externo: usa tu correo personal o de tu institución.
+        </p>
+      )}
 
       <AnimatePresence>
-      {(esAlumno || esDocente) && (
+      {rolValido && (
         <motion.div
           initial={{ opacity:0, height:0 }} animate={{ opacity:1, height:'auto' }} exit={{ opacity:0, height:0 }}
           style={{ display:'flex', flexDirection:'column', gap:12, overflow:'visible' }}
@@ -396,11 +422,47 @@ function RegisterForm({ mobile, onBack }: { mobile: boolean; onBack: () => void 
             <FloatingInput id={`${p}-ape`} label="Apellidos" value={apellidos} onChange={setApellidos} mobile={mobile} />
           </div>
 
-          {/* Código/DNI */}
-          {esAlumno
-            ? <FloatingInput id={`${p}-cod`} label="Código universitario" value={campo1} onChange={setCampo1} mobile={mobile} />
-            : <FloatingInput id={`${p}-dni`} label="DNI" value={campo1} onChange={v => { if (/^\d{0,8}$/.test(v)) setCampo1(v) }} mobile={mobile} type="text" />
-          }
+          {/* DNI — obligatorio para todos */}
+          <FloatingInput id={`${p}-dni`} label="DNI (8 dígitos)" value={dni} onChange={v => { if (/^\d{0,8}$/.test(v)) setDni(v) }} mobile={mobile} type="text" />
+
+          {/* Código universitario — solo alumno */}
+          {esAlumno && (
+            <FloatingInput id={`${p}-cod`} label="Código universitario" value={codigo} onChange={setCodigo} mobile={mobile} />
+          )}
+
+          {/* Externo: persona natural o institución/empresa */}
+          {esExterno && (
+            <>
+              <div style={{ display:'flex', gap:8 }}>
+                {([
+                  { value:'natural',     label:'Persona Natural' },
+                  { value:'institucion', label:'Institución / Empresa' },
+                ] as const).map(opt => {
+                  const active = tipoExterno === opt.value
+                  return (
+                    <button key={opt.value} type="button" onClick={() => setTipoExterno(opt.value)} style={{
+                      flex:1, padding:'9px 4px', borderRadius: mobile ? 14 : 8,
+                      border: `${active ? 2 : 1}px solid ${active ? '#1565c0' : (mobile ? 'rgba(255,255,255,0.4)' : '#bdbdbd')}`,
+                      background: active ? '#e8f0fe' : (mobile ? 'rgba(255,255,255,0.15)' : '#fff'),
+                      color: active ? '#1565c0' : (mobile ? '#fff' : '#757575'),
+                      fontSize:12, fontWeight: active ? 600 : 400, cursor:'pointer', fontFamily:'inherit',
+                      transition:'all 150ms',
+                    }}>
+                      {opt.label}
+                    </button>
+                  )
+                })}
+              </div>
+
+              {tipoExterno === 'institucion' && (
+                <>
+                  <FloatingInput id={`${p}-inst`} label="Institución / Empresa" value={institucion} onChange={setInstitucion} mobile={mobile} />
+                  <FloatingInput id={`${p}-ruc`} label="RUC (11 dígitos) *" value={ruc} onChange={v => { if (/^\d{0,11}$/.test(v)) setRuc(v) }} mobile={mobile} type="text" />
+                </>
+              )}
+              <FloatingInput id={`${p}-dir`} label="Dirección (opcional)" value={direccion} onChange={setDireccion} mobile={mobile} />
+            </>
+          )}
 
           {/* Teléfono — ambos roles */}
           <div style={{ position:'relative' }}>
@@ -446,10 +508,10 @@ function RegisterForm({ mobile, onBack }: { mobile: boolean; onBack: () => void 
           )}
 
           {/* Contraseña */}
-          <FloatingInput id={`${p}-pwd`} label="Contraseña" value={password} onChange={setPassword} isPassword mobile={mobile} />
+          <FloatingInput id={`${p}-pwd`} label="Contraseña (mín. 8 caracteres)" value={password} onChange={setPassword} isPassword mobile={mobile} />
 
           <p style={{ fontSize: 11, color: mobile ? 'rgba(255,255,255,0.6)' : '#9e9e9e', margin: '-4px 0 0', textAlign:'center' }}>
-            {esAlumno ? '🎓 Registrándote como Alumno' : '👨‍🏫 Registrándote como Docente'}
+            {esAlumno ? '🎓 Registrándote como Alumno' : esDocente ? '👨‍🏫 Registrándote como Docente' : '🌐 Registrándote como Usuario Externo'}
           </p>
         </motion.div>
       )}
@@ -464,11 +526,11 @@ function RegisterForm({ mobile, onBack }: { mobile: boolean; onBack: () => void 
         )}
       </AnimatePresence>
 
-      <button type="submit" disabled={loading || (!esAlumno && !esDocente)} style={{
+      <button type="submit" disabled={loading || !rolValido} style={{
         width:'100%', padding:'13px 0', background:'#1565c0', color:'#fff',
         border:'none', borderRadius: mobile ? 14 : 8, fontSize:15, fontWeight:600,
         cursor: loading ? 'not-allowed' : 'pointer', fontFamily:'inherit',
-        opacity: loading || (!esAlumno && !esDocente) ? 0.65 : 1,
+        opacity: loading || !rolValido ? 0.65 : 1,
       }}>
         {loading ? 'Registrando...' : 'Crear cuenta'}
       </button>
@@ -505,7 +567,7 @@ function LoginForm({ mobile, onRegister }: { mobile: boolean; onRegister: () => 
 
   return (
     <form onSubmit={handleSubmit} style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <FloatingInput id={mobile?'m-email':'d-email'} label="Correo institucional" value={email} onChange={setEmail} mobile={mobile} type="email" />
+      <FloatingInput id={mobile?'m-email':'d-email'} label="Correo electrónico" value={email} onChange={setEmail} mobile={mobile} type="email" />
       <FloatingInput id={mobile?'m-pwd':'d-pwd'}     label="Contraseña"           value={contrasena} onChange={setContrasena} isPassword mobile={mobile} />
 
       <AnimatePresence>

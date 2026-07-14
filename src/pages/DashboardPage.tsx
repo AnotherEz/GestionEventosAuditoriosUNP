@@ -419,6 +419,8 @@ export default function DashboardPage() {
       {!sinBD && user.rol === 'admin'   && <AdminDashboard />}
       {!sinBD && user.rol === 'docente' && <DocenteDashboard userId={user.id} />}
       {!sinBD && user.rol === 'alumno'  && <AlumnoDashboard userId={user.id} />}
+      {/* El externo también gestiona solicitudes de auditorio → mismo panel que el docente */}
+      {!sinBD && user.rol === 'externo' && <DocenteDashboard userId={user.id} />}
       {sinBD && (
         <div style={{ textAlign: 'center', padding: 60, color: '#94a3b8' }}>
           <TrendingUp size={56} style={{ marginBottom: 16, opacity: 0.5 }} />

@@ -1,5 +1,5 @@
 import { api } from './api'
-import type { Auditorio, Evento, SolicitudReservaExt, Reserva, Usuario } from './types'
+import type { Auditorio, DisponibilidadSemana, Evento, SolicitudReservaExt, Reserva, Usuario } from './types'
 
 // ── Auditorios ──────────────────────────────────────────────────────────────
 
@@ -13,6 +13,11 @@ export function upsertAuditorio(a: Partial<Auditorio> & { nombre: string; capaci
 
 export function toggleAuditorio(id: string, activo: boolean) {
   return api.patch(`/auditorios/${id}/estado`, { activo })
+}
+
+/** Bloques ocupados de la semana (lunes-domingo) que contiene la fecha dada. */
+export function getDisponibilidad(auditorioId: string, fecha: string): Promise<DisponibilidadSemana> {
+  return api.get<DisponibilidadSemana>(`/auditorios/${auditorioId}/disponibilidad?fecha=${fecha}`)
 }
 
 // ── Eventos ─────────────────────────────────────────────────────────────────
@@ -72,8 +77,11 @@ export function crearSolicitud(s: {
   fecha_inicio: string
   fecha_fin: string
   asistentes_est?: number
-}) {
-  return api.post('/solicitudes', s)
+  duracion?: 'completo' | 'medio'
+  tipo_evento?: 'academico' | 'pago'
+}): Promise<SolicitudReservaExt> {
+  // El backend calcula y devuelve el MONTO REAL según el tarifario TUSNE
+  return api.post<SolicitudReservaExt>('/solicitudes', s)
 }
 
 export function revisarSolicitud(
@@ -142,12 +150,32 @@ export function getUsuarios(): Promise<(Usuario & { carrera_nombre?: string; fac
   return api.get('/usuarios')
 }
 
-export function updateUsuarioRol(id: string, rol: 'alumno' | 'docente') {
+export function updateUsuarioRol(id: string, rol: 'alumno' | 'docente' | 'externo') {
   return api.patch(`/usuarios/${id}/rol`, { rol })
 }
 
 export function toggleUsuario(id: string, activo: boolean) {
   return api.patch(`/usuarios/${id}/estado`, { activo })
+}
+
+/** El admin crea cuentas internas (docente/alumno). Contraseña inicial = DNI. */
+export function crearUsuarioInterno(u: {
+  rol: 'docente' | 'alumno'
+  nombres: string
+  apellidos: string
+  email: string
+  dni: string
+  telefono?: string
+  codigo_universitario?: string
+  carrera_id?: string
+  facultad_id?: string
+}): Promise<{ user: Usuario; mensaje: string }> {
+  return api.post('/usuarios', u)
+}
+
+/** Resetea la contraseña de un usuario a su DNI y reactiva el cambio obligatorio. */
+export function resetPasswordUsuario(id: string): Promise<{ ok: boolean; mensaje: string }> {
+  return api.patch(`/usuarios/${id}/reset-password`)
 }
 
 // ── Dashboard stats ──────────────────────────────────────────────────────────
