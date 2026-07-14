@@ -3,7 +3,7 @@
 // proyecto PHP servido por Apache/XAMPP en htdocs.
 
 const BASE_URL = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '')
-  ?? 'http://localhost/api-eventos-unp'
+  ?? 'https://api-eventos-unp-production.up.railway.app/'
 
 const TOKEN_KEY = 'unp_token'
 
