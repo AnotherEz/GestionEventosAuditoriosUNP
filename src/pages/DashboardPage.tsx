@@ -193,20 +193,24 @@ function DocenteDashboard({ userId }: { userId: string }) {
   )
 }
 
-// ── Alumno Dashboard (Alta Precisión) ────────────────────────────────────────
+// ── Alumno Dashboard (Alta Precisión + Eventos Propios) ──────────────────────
 
 function AlumnoDashboard({ userId }: { userId: string }) {
   const navigate = useNavigate()
   const [eventosDisponibles, setEventosDisponibles] = useState<Evento[]>([])
   const [misReservas, setMisReservas] = useState<(Reserva & { evento?: Evento })[]>([])
+  const [misEventos, setMisEventos] = useState<Evento[]>([])
+  const [solicitudes, setSolicitudes] = useState<SolicitudReservaExt[]>([])
   const [loadingData, setLoadingData] = useState(true)
 
   useEffect(() => {
     // Obtenemos TODO en paralelo para hacer el cruce en memoria
     Promise.all([
       getProximosEventos(15), 
-      getMisReservas(userId)
-    ]).then(([prox, reservas]) => {
+      getMisReservas(userId),
+      getMisEventos(userId),
+      getMisSolicitudes(userId)
+    ]).then(([prox, reservas, organizados, sols]) => {
       
       const activas = reservas.filter(x => x.estado === 'confirmada')
       setMisReservas(activas.slice(0, 4))
@@ -214,17 +218,20 @@ function AlumnoDashboard({ userId }: { userId: string }) {
       // Extraemos los IDs de los eventos donde el alumno YA está inscrito
       const idsInscritos = new Set(activas.map(r => r.evento_id))
 
-      // Filtramos con precisión quirúrgica:
-      // 1. No debe estar ya reservado por el alumno
-      // 2. Debe tener cupo disponible
-      // 3. Debe estar en estado publicado
+      // Filtramos el catálogo de disponibles
       const realesDisponibles = prox.filter(e => 
         !idsInscritos.has(e.id) && 
         e.cupos_reservados < e.cupo_maximo &&
         e.estado === 'publicado'
       )
-      
       setEventosDisponibles(realesDisponibles)
+
+      // Eventos que el propio alumno organiza (ya aprobados)
+      setMisEventos(organizados.slice(0, 4))
+
+      // Solicitudes que el alumno ha enviado
+      setSolicitudes(sols.slice(0, 3) as SolicitudReservaExt[])
+
     }).catch(() => {})
     .finally(() => setLoadingData(false))
 
@@ -237,6 +244,7 @@ function AlumnoDashboard({ userId }: { userId: string }) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 20, marginBottom: 28 }}>
         <KPICard label="Eventos Disponibles" value={eventosDisponibles.length} icon={CalendarDays} color="#1565c0" bg="#eff6ff" delay={0} />
         <KPICard label="Mis Entradas Activas" value={misReservas.length} icon={TicketCheck} color="#16a34a" bg="#dcfce7" delay={0.05} />
+        <KPICard label="Eventos Organizados" value={misEventos.length} icon={Building2} color="#ea580c" bg="#fff7ed" delay={0.1} />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>
@@ -254,7 +262,7 @@ function AlumnoDashboard({ userId }: { userId: string }) {
           ) : eventosDisponibles.slice(0, 4).map(e => <EventoRow key={e.id} evento={e} onClick={() => navigate('/catalogo')} />)}
         </motion.div>
 
-        {/* Mis Reservas */}
+        {/* Mis Asistencias */}
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
           style={{ background: '#fff', borderRadius: 16, border: '1px solid #f1f5f9', padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}
         >
@@ -280,6 +288,44 @@ function AlumnoDashboard({ userId }: { userId: string }) {
             </div>
           ))}
         </motion.div>
+
+        {/* Mis Eventos (Organizados) */}
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+          style={{ background: '#fff', borderRadius: 16, border: '1px solid #f1f5f9', padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+            <h2 style={{ fontSize: 16, fontWeight: 700, color: '#1e293b', margin: 0 }}>Mis Eventos Organizados</h2>
+            <button onClick={() => navigate('/eventos')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1565c0', fontSize: 13, fontWeight: 600 }}>Gestionar</button>
+          </div>
+          {misEventos.length === 0 ? (
+            <EmptyState icon={Building2} text="No has organizado eventos aún" />
+          ) : misEventos.map(e => <EventoRow key={e.id} evento={e} onClick={() => navigate('/eventos')} />)}
+        </motion.div>
+
+        {/* Mis Solicitudes */}
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
+          style={{ background: '#fff', borderRadius: 16, border: '1px solid #f1f5f9', padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+            <h2 style={{ fontSize: 16, fontWeight: 700, color: '#1e293b', margin: 0 }}>Mis Solicitudes</h2>
+            <button onClick={() => navigate('/solicitudes')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1565c0', fontSize: 13, fontWeight: 600 }}>Ver todas</button>
+          </div>
+          {solicitudes.length === 0 ? (
+            <EmptyState icon={ClipboardList} text="No has enviado solicitudes recientes" />
+          ) : solicitudes.map(s => <SolicitudRow key={s.id} sol={s} />)}
+          
+          <div style={{ marginTop: 24 }}>
+            <button onClick={() => navigate('/nueva-solicitud')} style={{
+              width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              background: '#1565c0', color: '#fff', border: 'none', borderRadius: 12,
+              padding: '14px', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+              transition: 'background 0.2s'
+            }}>
+              <ClipboardList size={18} /> Solicitar Nuevo Auditorio
+            </button>
+          </div>
+        </motion.div>
+
       </div>
     </>
   )
