@@ -4,60 +4,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { signIn, signUpAlumno, signUpDocente, signUpExterno, detectarRolPorEmail } from '../lib/auth'
 import { getFacultades, getCarreras } from '../lib/db'
 import { useAuth } from '../lib/AuthContext'
-import {
-  Eye, EyeOff, UserCircle, Monitor, GraduationCap, BookOpen,
-  Users, Globe, FileText, Award, Search, Building2, BookMarked, Heart,
-} from 'lucide-react'
+import { Eye, EyeOff } from 'lucide-react'
 import unpShield from '../assets/unp-shield.png'
 import campusBg  from '../assets/campus-bg.png'
-
-/* ─── Data ───────────────────────────────────────────────────────────────────── */
-const SERVICES = {
-  'Pregrado': [
-    { label: 'Admisión',                             icon: UserCircle },
-    { label: 'Matrícula',                            icon: Monitor    },
-    { label: 'Intranet',                             icon: UserCircle },
-    { label: 'Aula Virtual',                         icon: Monitor    },
-    { label: 'Gestión de Tutoría',                   icon: BookOpen   },
-    { label: 'Gestión y Programación',               icon: Users      },
-    { label: 'Gestión de Biblioteca',                icon: BookMarked },
-    { label: 'Responsabilidad Social',               icon: Heart      },
-    { label: 'Seguimiento al egresado',              icon: GraduationCap },
-    { label: 'Cooperación Nacional e Internacional', icon: Globe      },
-    { label: 'Gestión de Tesis',                     icon: FileText   },
-    { label: 'Grados y Títulos',                     icon: Award      },
-    { label: 'Investigación Docente',                icon: Search     },
-    { label: 'Incubadora de Empresas',               icon: Building2  },
-  ],
-  'Posgrado y Extensión': [
-    { label: 'Admisión Posgrado',       icon: UserCircle },
-    { label: 'Matrícula Posgrado',      icon: Monitor    },
-    { label: 'Aula Virtual',            icon: Monitor    },
-    { label: 'Gestión de Tutoría',      icon: BookOpen   },
-    { label: 'Investigación',           icon: Search     },
-    { label: 'Gestión de Tesis',        icon: FileText   },
-    { label: 'Grados y Títulos',        icon: Award      },
-    { label: 'Extensión Universitaria', icon: Globe      },
-  ],
-  'Gestión Administrativa': [
-    { label: 'Gestión de Tutoría',        icon: BookOpen   },
-    { label: 'Gestión y Programación',    icon: Users      },
-    { label: 'Gestión de Biblioteca',     icon: BookMarked },
-    { label: 'Responsabilidad Social',    icon: Heart      },
-    { label: 'Cooperación Internacional', icon: Globe      },
-    { label: 'Gestión de Tesis',          icon: FileText   },
-    { label: 'Grados y Títulos',          icon: Award      },
-    { label: 'Investigación Docente',     icon: Search     },
-  ],
-  'Centros de Producción': [
-    { label: 'Investigación Docente',     icon: Search    },
-    { label: 'Incubadora de Empresas',    icon: Building2 },
-    { label: 'Gestión y Programación',    icon: Users     },
-    { label: 'Cooperación Internacional', icon: Globe     },
-  ],
-}
-type Tab = keyof typeof SERVICES
-const TABS = Object.keys(SERVICES) as Tab[]
 
 /* ─── FloatingInput ──────────────────────────────────────────────────────────── */
 function FloatingInput({ id, label, value, onChange, isPassword = false, mobile = false, type = 'text' }: {
@@ -115,18 +64,16 @@ function ComboField({ id, label, value, onSelect, options, mobile = false }: {
   const [query,   setQuery]   = useState('')
   const [open,    setOpen]    = useState(false)
   const [focused, setFocused] = useState(false)
-  // Cuando hay un valor seleccionado, mostrar su etiqueta como texto del input
+  
   const selectedLabel = options.find(o => o.value === value)?.label ?? ''
 
-  // Sincronizar query con la selección cuando el campo gana foco
   const handleFocus = () => {
     setFocused(true)
-    setQuery('')   // limpia para que se vean todas las opciones al abrir
+    setQuery('')   
     setOpen(true)
   }
 
   const handleBlur = () => {
-    // Pequeño delay para que el click en opción se registre antes de cerrar
     setTimeout(() => {
       setFocused(false)
       setOpen(false)
@@ -179,13 +126,11 @@ function ComboField({ id, label, value, onSelect, options, mobile = false }: {
             boxSizing: 'border-box', fontFamily: 'inherit',
           }}
         />
-        {/* Chevron */}
         <div style={{ position: 'absolute', right: 14, top: '50%', transform: `translateY(-50%) rotate(${open ? 180 : 0}deg)`, transition: 'transform 150ms', pointerEvents: 'none', color: '#1565c0' }}>
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </div>
       </div>
 
-      {/* Dropdown */}
       <AnimatePresence>
         {open && filtered.length > 0 && (
           <motion.ul
@@ -243,43 +188,74 @@ function Shield({ size = 112 }: { size?: number }) {
     style={{ width: size, height: size, objectFit: 'contain', display: 'block', margin: '0 auto' }} />
 }
 
-/* ─── Services Grid ──────────────────────────────────────────────────────────── */
-function ServicesGrid({ mobile = false }: { mobile?: boolean }) {
-  const [activeTab, setActiveTab] = useState<Tab>('Pregrado')
+/* ─── Typewriter Effect para Panel Derecho ──────────────────────────────────── */
+function TypewriterDescription() {
+  // Frases actualizadas acorde al Sistema de Gestión de Eventos y Reserva de Auditorios
+  const phrases = [
+    "Sistema de Gestión de Eventos y Reserva de Auditorios UNP.",
+    "Digitaliza la solicitud de espacios académicos y culturales.",
+    "Control de aforos transaccional en tiempo real.",
+    "Cálculo automatizado de tarifas según el TUSNE oficial.",
+    "Plataforma segura para administradores, docentes, alumnos y externos."
+  ];
+
+  const [text, setText] = useState('');
+  const [loopNum, setLoopNum] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    const typingSpeed = 50;
+    const deletingSpeed = 25;
+    const delayBetweenPhrases = 3000;
+
+    let timer: NodeJS.Timeout;
+    const i = loopNum % phrases.length;
+    const fullText = phrases[i];
+
+    if (isDeleting) {
+      timer = setTimeout(() => {
+        setText(fullText.substring(0, text.length - 1));
+      }, deletingSpeed);
+    } else {
+      timer = setTimeout(() => {
+        setText(fullText.substring(0, text.length + 1));
+      }, typingSpeed);
+    }
+
+    if (!isDeleting && text === fullText) {
+      timer = setTimeout(() => setIsDeleting(true), delayBetweenPhrases);
+    } else if (isDeleting && text === '') {
+      setIsDeleting(false);
+      setLoopNum(loopNum + 1);
+    }
+
+    return () => clearTimeout(timer);
+  }, [text, isDeleting, loopNum]);
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
-      <div style={{
-        display: 'flex', flexWrap: mobile ? 'wrap' : 'nowrap', gap: mobile ? '0 24px' : 28,
-        borderBottom: `1px solid ${mobile ? '#e0e0e0' : 'rgba(255,255,255,0.25)'}`,
-        marginBottom: mobile ? 16 : 20, flexShrink: 0, padding: mobile ? '0 4px' : undefined,
+    <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', flex: 1, padding: '0 12px' }}>
+      <h2 style={{ 
+        color: '#fff', 
+        fontSize: '3.5rem', 
+        fontWeight: 800, 
+        lineHeight: 1.2, 
+        margin: 0, 
+        minHeight: '200px'
       }}>
-        {TABS.map(tab => (
-          <button key={tab} onClick={() => setActiveTab(tab)} style={{
-            paddingBottom: 10, paddingTop: mobile ? 4 : 0,
-            fontSize: mobile ? 15 : 13, fontWeight: activeTab === tab ? 700 : 400,
-            background: 'none', border: 'none', cursor: 'pointer',
-            color: mobile ? (activeTab === tab ? '#1565c0' : '#9e9e9e') : (activeTab === tab ? '#fff' : 'rgba(144,202,249,0.9)'),
-            position: 'relative', whiteSpace: 'nowrap', fontFamily: 'inherit', transition: 'color 150ms',
-          }}>
-            {tab}
-            {activeTab === tab && <motion.div layoutId={mobile ? 'tab-m' : 'tab-d'} style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 2, background: mobile ? '#1565c0' : '#fff', borderRadius: 2 }} />}
-          </button>
-        ))}
-      </div>
-      <motion.div key={activeTab} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}
-        style={{ display: 'grid', gridTemplateColumns: mobile ? 'repeat(2,1fr)' : 'repeat(auto-fill,minmax(130px,1fr))', gap: mobile ? 12 : 10, overflowY: 'auto', flex: 1, paddingRight: 4, paddingBottom: 8 }}>
-        {SERVICES[activeTab].map((svc, i) => {
-          const Icon = svc.icon
-          return (
-            <motion.div key={svc.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
-              whileHover={!mobile ? { scale: 1.03 } : {}}
-              style={{ background: mobile ? '#fff' : 'rgba(255,255,255,0.92)', borderRadius: mobile ? 16 : 12, border: mobile ? '1.5px solid #90caf9' : 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: mobile ? 14 : 8, padding: mobile ? '24px 12px' : '18px 12px', cursor: 'pointer', minHeight: mobile ? 130 : 100 }}>
-              <Icon size={mobile ? 36 : 28} color="#1565c0" strokeWidth={1.5} />
-              <span style={{ color: mobile ? '#1565c0' : '#1a237e', fontSize: mobile ? 13 : 11, textAlign: 'center', lineHeight: 1.35, fontWeight: 500 }}>{svc.label}</span>
-            </motion.div>
-          )
-        })}
-      </motion.div>
+        {text}
+        <span style={{ 
+          display: 'inline-block', 
+          width: '5px', 
+          height: '3.5rem', 
+          marginLeft: '8px', 
+          backgroundColor: '#fff', 
+          animation: 'blink 1s step-end infinite', 
+          verticalAlign: 'bottom' 
+        }}></span>
+      </h2>
+      <style>{`
+        @keyframes blink { 50% { opacity: 0; } }
+      `}</style>
     </div>
   )
 }
@@ -290,20 +266,19 @@ function RegisterForm({ mobile, onBack }: { mobile: boolean; onBack: () => void 
   const [nombres,     setNombres]     = useState('')
   const [apellidos,   setApellidos]   = useState('')
   const [password,    setPassword]    = useState('')
-  const [dni,         setDni]         = useState('')   // obligatorio para todos
-  const [codigo,      setCodigo]      = useState('')   // código universitario (alumno)
+  const [dni,         setDni]         = useState('')   
+  const [codigo,      setCodigo]      = useState('')   
   const [telefono,    setTelefono]    = useState('')
   const [facultadId,  setFacultadId]  = useState('')
   const [carreraId,   setCarreraId]   = useState('')
   const [tipoExterno, setTipoExterno] = useState<'natural' | 'institucion'>('natural')
-  const [institucion, setInstitucion] = useState('')   // externo (solo institución/empresa)
-  const [ruc,         setRuc]         = useState('')   // externo (solo institución/empresa)
-  const [direccion,   setDireccion]   = useState('')   // externo (opcional)
+  const [institucion, setInstitucion] = useState('')   
+  const [ruc,         setRuc]         = useState('')   
+  const [direccion,   setDireccion]   = useState('')   
   const [loading,     setLoading]     = useState(false)
   const [error,       setError]       = useState('')
   const [success,     setSuccess]     = useState(false)
 
-  // Catálogos
   const [facultades, setFacultades] = useState<{value:string;label:string}[]>([])
   const [todasCarreras, setTodasCarreras] = useState<{value:string;label:string;facultad_id:string}[]>([])
 
@@ -313,7 +288,6 @@ function RegisterForm({ mobile, onBack }: { mobile: boolean; onBack: () => void 
   const esExterno  = rol === 'externo'
   const rolValido  = esAlumno || esDocente || esExterno
 
-  // Carreras filtradas por la facultad elegida
   const carrerasFiltradas = facultadId
     ? todasCarreras.filter(c => c.facultad_id === facultadId)
     : todasCarreras
@@ -327,7 +301,6 @@ function RegisterForm({ mobile, onBack }: { mobile: boolean; onBack: () => void 
       .catch(console.error)
   }, [])
 
-  // Resetear carrera al cambiar facultad
   const handleFacultadSelect = (id: string) => {
     setFacultadId(id)
     setCarreraId('')
@@ -353,7 +326,6 @@ function RegisterForm({ mobile, onBack }: { mobile: boolean; onBack: () => void 
     if (esAlumno && !carreraId)  { setError('Selecciona tu escuela/carrera.'); return }
     const esInstitucion = esExterno && tipoExterno === 'institucion'
     if (esInstitucion && !institucion.trim()) { setError('Ingresa el nombre de tu institución o empresa.'); return }
-    // Una institución/empresa se identifica con su RUC: es obligatorio
     if (esInstitucion && !/^\d{11}$/.test(ruc)) { setError('El RUC es obligatorio para instituciones y debe tener 11 dígitos.'); return }
 
     setLoading(true)
@@ -416,21 +388,17 @@ function RegisterForm({ mobile, onBack }: { mobile: boolean; onBack: () => void 
           initial={{ opacity:0, height:0 }} animate={{ opacity:1, height:'auto' }} exit={{ opacity:0, height:0 }}
           style={{ display:'flex', flexDirection:'column', gap:12, overflow:'visible' }}
         >
-          {/* Nombres y apellidos */}
           <div style={{ display:'flex', gap:12 }}>
             <FloatingInput id={`${p}-nom`} label="Nombres"   value={nombres}   onChange={setNombres}   mobile={mobile} />
             <FloatingInput id={`${p}-ape`} label="Apellidos" value={apellidos} onChange={setApellidos} mobile={mobile} />
           </div>
 
-          {/* DNI — obligatorio para todos */}
           <FloatingInput id={`${p}-dni`} label="DNI (8 dígitos)" value={dni} onChange={v => { if (/^\d{0,8}$/.test(v)) setDni(v) }} mobile={mobile} type="text" />
 
-          {/* Código universitario — solo alumno */}
           {esAlumno && (
             <FloatingInput id={`${p}-cod`} label="Código universitario" value={codigo} onChange={setCodigo} mobile={mobile} />
           )}
 
-          {/* Externo: persona natural o institución/empresa */}
           {esExterno && (
             <>
               <div style={{ display:'flex', gap:8 }}>
@@ -464,7 +432,6 @@ function RegisterForm({ mobile, onBack }: { mobile: boolean; onBack: () => void 
             </>
           )}
 
-          {/* Teléfono — ambos roles */}
           <div style={{ position:'relative' }}>
             <FloatingInput
               id={`${p}-tel`}
@@ -485,7 +452,6 @@ function RegisterForm({ mobile, onBack }: { mobile: boolean; onBack: () => void 
             )}
           </div>
 
-          {/* Alumno: Facultad → Escuela/Carrera en cascada */}
           {esAlumno && (
             <>
               <ComboField
@@ -507,7 +473,6 @@ function RegisterForm({ mobile, onBack }: { mobile: boolean; onBack: () => void 
             </>
           )}
 
-          {/* Contraseña */}
           <FloatingInput id={`${p}-pwd`} label="Contraseña (mín. 8 caracteres)" value={password} onChange={setPassword} isPassword mobile={mobile} />
 
           <p style={{ fontSize: 11, color: mobile ? 'rgba(255,255,255,0.6)' : '#9e9e9e', margin: '-4px 0 0', textAlign:'center' }}>
@@ -556,7 +521,7 @@ function LoginForm({ mobile, onRegister }: { mobile: boolean; onRegister: () => 
     setError(''); setLoading(true)
     try {
       await signIn(email, contrasena)
-      await refresh()            // sincroniza el contexto de sesión antes de navegar
+      await refresh()
       navigate('/dashboard')
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Correo o contraseña incorrectos.')
@@ -568,7 +533,7 @@ function LoginForm({ mobile, onRegister }: { mobile: boolean; onRegister: () => 
   return (
     <form onSubmit={handleSubmit} style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 16 }}>
       <FloatingInput id={mobile?'m-email':'d-email'} label="Correo electrónico" value={email} onChange={setEmail} mobile={mobile} type="email" />
-      <FloatingInput id={mobile?'m-pwd':'d-pwd'}     label="Contraseña"           value={contrasena} onChange={setContrasena} isPassword mobile={mobile} />
+      <FloatingInput id={mobile?'m-pwd':'d-pwd'}     label="Contraseña"         value={contrasena} onChange={setContrasena} isPassword mobile={mobile} />
 
       <AnimatePresence>
         {error && <motion.p initial={{ opacity:0, y:-4 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0 }}
@@ -679,7 +644,9 @@ export default function LoginPage() {
             <div style={{ position:'absolute', inset:0, background:'rgba(13,71,161,0.78)' }} />
           </div>
           <div style={{ position:'relative', zIndex:1, display:'flex', flexDirection:'column', height:'100%', padding:'20px 24px 16px' }}>
-            <ServicesGrid mobile={false} />
+            
+            <TypewriterDescription />
+            
             <p style={{ paddingTop:12, flexShrink:0, color:'rgba(255,255,255,0.4)', fontSize:36, fontWeight:700, lineHeight:1 }}>Bienvenido a</p>
           </div>
         </div>
@@ -712,11 +679,6 @@ export default function LoginPage() {
               }
             </AnimatePresence>
           </div>
-        </div>
-
-        {/* Mobile: services */}
-        <div className="mobile-section" style={{ background:'#fff', padding:'20px 16px 32px', minHeight:'100vh' }}>
-          <ServicesGrid mobile />
         </div>
       </div>
     </>
