@@ -208,7 +208,7 @@ function TypewriterDescription() {
     const deletingSpeed = 25;
     const delayBetweenPhrases = 3000;
 
-    let timer: NodeJS.Timeout;
+    let timer: ReturnType<typeof setTimeout>;
     const i = loopNum % phrases.length;
     const fullText = phrases[i];
 
