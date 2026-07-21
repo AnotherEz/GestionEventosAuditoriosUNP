@@ -205,7 +205,7 @@ function AlumnoDashboard({ userId }: { userId: string }) {
     // Obtenemos TODO en paralelo para hacer el cruce en memoria
     Promise.all([
       getProximosEventos(15), 
-      getMisReservas(userId)
+      getMisReservas(userId),
     ]).then(([prox, reservas]) => {
       
       const activas = reservas.filter(x => x.estado === 'confirmada')
